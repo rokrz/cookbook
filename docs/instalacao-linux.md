@@ -1,7 +1,7 @@
 # Instalação do PocketBase na máquina Linux
 
 Guia para colocar o **Meu Caderno de Receitas** no ar em `https://bokerzcraft.duckdns.org:PORTA`.
-Em todos os comandos, troque **`PORTA`** pela porta pública do seu proxy HTTPS e **`SEU_USUARIO_GITHUB`** pelo seu usuário.
+Em todos os comandos, troque **`PORTA`** pela porta pública do seu proxy HTTPS.
 
 O resultado final:
 
@@ -73,8 +73,8 @@ chmod 775 /opt/pocketbase/pocketbase
 
 ```bash
 cd ~
-git clone https://github.com/SEU_USUARIO_GITHUB/meu-caderno-de-receitas.git
-cd meu-caderno-de-receitas
+git clone https://github.com/rokrz/cookbook.git
+cd cookbook
 PB_DIR=/opt/pocketbase ./scripts/deploy.sh
 ```
 
@@ -217,7 +217,7 @@ Lista de conferência:
 **Do app** (depois de um `git push` com mudanças):
 
 ```bash
-cd ~/meu-caderno-de-receitas
+cd ~/cookbook
 git pull
 PB_DIR=/opt/pocketbase ./scripts/deploy.sh   # compila, copia e reinicia
 ```
