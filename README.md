@@ -3,7 +3,7 @@
 App pessoal de receitas (React + TypeScript + Vite) com backend **PocketBase** hospedado em casa.
 Endereço de produção: `https://bokerzcraft.duckdns.org:PORTA` (troque `PORTA` pela porta pública do seu proxy HTTPS).
 
-O plano completo está em `docs/plano-implementacao-pocketbase.md` e o passo a passo de instalação em [`docs/instalacao-linux.md`](docs/instalacao-linux.md).
+O plano completo está em `docs/plano-implementacao-pocketbase.md`. Para instalar na máquina Linux, siga [`docs/roteiro-setup-linux.md`](docs/roteiro-setup-linux.md) (detalhes em [`docs/instalacao-linux.md`](docs/instalacao-linux.md)).
 
 ## O que já funciona
 

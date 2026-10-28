@@ -1,7 +1,6 @@
 # Trecho para o nginx. Troque PORTA pela porta pública e mantenha os certificados que já usa.
 server {
-    listen PORTA ssl;
-    http2 on;
+    listen PORTA ssl http2;   # nginx >= 1.25: use "listen PORTA ssl;" + "http2 on;"
     server_name bokerzcraft.duckdns.org;
 
     # ssl_certificate     /caminho/fullchain.pem;
