@@ -1,0 +1,28 @@
+# /etc/systemd/system/pocketbase.service
+# Troque PORTA pela porta pública do proxy HTTPS.
+[Unit]
+Description=PocketBase - Meu Caderno de Receitas
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pocketbase
+Group=pocketbase
+UMask=0002
+WorkingDirectory=/opt/pocketbase
+Environment=PB_APP_URL=https://bokerzcraft.duckdns.org:PORTA
+ExecStart=/opt/pocketbase/pocketbase serve --http=127.0.0.1:8090
+Restart=always
+RestartSec=5
+LimitNOFILE=4096
+
+# Endurecimento: o serviço só escreve na própria pasta.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/pocketbase
+
+[Install]
+WantedBy=multi-user.target

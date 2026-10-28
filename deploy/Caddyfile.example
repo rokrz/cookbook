@@ -1,0 +1,19 @@
+# Trecho para o Caddy. Troque PORTA pela porta pública.
+bokerzcraft.duckdns.org:PORTA {
+    request_body {
+        max_size 10MB
+    }
+
+    # Painel administrativo só a partir da rede de casa (ajuste a faixa).
+    @admin_fora_de_casa {
+        path /_/*
+        not remote_ip 192.168.0.0/16 127.0.0.1
+    }
+    respond @admin_fora_de_casa 403
+
+    reverse_proxy 127.0.0.1:8090 {
+        transport http {
+            read_timeout 360s
+        }
+    }
+}

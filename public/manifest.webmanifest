@@ -1,0 +1,12 @@
+{
+  "name": "Meu Caderno de Receitas",
+  "short_name": "Receitas",
+  "description": "Caderno pessoal de receitas",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f1e6",
+  "theme_color": "#7d9a7e",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
