@@ -204,12 +204,68 @@ storage: users/{uid}/recipes/{id}.webp
 regras: request.auth.uid == uid em tudo
 ```
 
+## 6b. Revisão: o objetivo é publicar o app (resposta do Ivan, 29/10/2026)
+
+O Ivan explicou: a versão local é pensando em **publicar o app** para outras pessoas, e o Firebase é
+uma alternativa ao **PC de casa fazendo papel de servidor**. Isso muda a recomendação das seções 5 e 6.
+
+**Por que o PC de casa não serve para um app publicado:** cada usuário novo usa a sua máquina, sua
+internet e sua energia; se o PC desliga, o app de todo mundo para; abrir cadastro para estranhos na
+rede de casa é risco de segurança; e você vira responsável pelos dados de terceiros (LGPD).
+
+**Modelo recomendado para publicar: "local primeiro, nuvem opcional"**
+- Por padrão o app guarda tudo **no aparelho** (IndexedDB). Quem baixa usa sem criar conta, sem custo
+  para você por usuário, e funciona offline.
+- **Conta opcional** ("Fazer backup e sincronizar") para quem quer o caderno em mais de um aparelho.
+  Só esses usuários geram custo de servidor.
+- Exportar/Importar backup em arquivo sempre disponível.
+- A camada de dados da seção 5 (`src/data/` com `LocalStore` + um store de nuvem) deixa de ser
+  opcional e vira a base.
+
+**Qual nuvem para a sincronização**
+
+| | Firebase (Blaze com cota grátis) | PocketBase em servidor alugado (VPS) | PocketBase no PC de casa |
+|---|---|---|---|
+| Custo inicial | R$ 0 dentro da cota; cartão obrigatório; definir alerta de orçamento | ~US$ 4–6/mês | R$ 0 |
+| Manutenção | Quase nenhuma | Atualizar, backup, monitorar | Igual VPS + PC ligado |
+| Sincronização e offline | Nativos no Firestore | Precisa programar | Precisa programar |
+| Fotos | Cloud Storage (5 GB grátis) | Disco do servidor | Disco do PC |
+| Ler links de redes (item 3) | Cloud Functions (cota grátis) | pb_hooks | pb_hooks |
+| Login Google/Apple | Pronto | Possível (OAuth2), configurar | Idem |
+| Cresce com usuários | Automático, paga por uso | Trocar de plano | Não |
+
+O plano **Spark** (sem cartão) não serve para publicar: sem fotos, sem Functions, e as cotas
+(50 mil leituras/dia, 1 GiB) são do projeto inteiro, divididas entre todos os usuários.
+
+**Recomendação para publicar:** local primeiro + **Firebase Blaze** para quem quiser conta, com alerta
+de orçamento em US$ 1 e regras de segurança por usuário. O PocketBase pode continuar sendo o servidor
+pessoal do Ivan até a migração.
+
+**Publicar onde**
+- **Android / Play Store:** empacotar o PWA como TWA (Bubblewrap). Taxa única de US$ 25. O
+  compartilhamento (item 2) funciona igual.
+- **iPhone / App Store:** exige empacotar com **Capacitor** (US$ 99/ano). Com Capacitor dá para criar
+  uma extensão de compartilhamento nativa, resolvendo a limitação do iOS do item 2, e usar SQLite em
+  vez de IndexedDB (sem risco de o sistema apagar dados).
+- **Só como site/PWA:** custo zero, mas descoberta e instalação mais difíceis, e sem compartilhamento
+  no iPhone.
+
+**Antes de publicar, além do código:** política de privacidade (obrigatória nas lojas e pela LGPD),
+termos de uso, opção de excluir conta e dados, e cuidado com o item 3: o app só guarda o link e um
+nome; não copiar fotos ou textos de posts de terceiros para usuários públicos sem pensar em direitos
+autorais (para uso pessoal o risco é baixo; num app publicado, preferir mostrar a prévia sem
+armazenar a foto, ou só a miniatura).
+
 ## 7. Roteiro proposto
+
+> Revisado pela seção 6b: se o objetivo for publicar, a Etapa C vira obrigatória e passa a ser
+> "camada de dados → LocalStore como padrão → FirebaseStore para sincronização → empacotar para as
+> lojas". As Etapas A e B continuam iguais e podem ser feitas antes.
 
 **Etapa A — Captura rápida (no PocketBase)**
 1. `CategoryPicker` com criação na hora (item 4).
 2. Salvar rápido + selo "Só o link" + filtro "Para completar" + aviso de link duplicado (item 1).
-3. `share_target` no manifest, ícones PNG, leitura dos parâmetros, Atalho do iOS documentado (item 2).
+3. `share_target` no manifest, ícones PNG e leitura dos parâmetros (item 2). Foco Android; Atalho do iOS fica opcional.
 
 **Etapa B — Preenchimento automático**
 4. Hook `link-preview` com TikTok, YouTube, Pinterest e sites (og/JSON-LD); Instagram/Facebook pelo
@@ -224,15 +280,20 @@ regras: request.auth.uid == uid em tudo
 **Critérios de aceite da Etapa A**
 - No Android, com o app instalado, "Compartilhar → Receitas" a partir do Instagram e do TikTok abre o
   Salvar rápido com o link preenchido.
-- No iPhone, o Atalho faz o mesmo.
 - É possível salvar com só link + nome, criando uma categoria nova no mesmo passo, em menos de 10 s.
 - Compartilhar o mesmo link duas vezes avisa que já existe.
 
-## 8. Pendências / perguntas para o Ivan
-- Qual aparelho é o principal para salvar receitas: Android ou iPhone? (define a prioridade do Atalho)
-- A motivação do 100% local e do Firebase é "funcionar sem o PC ligado", "funcionar offline" ou
-  "outra pessoa usar sem conta no meu servidor"? Cada uma leva a uma solução diferente.
-- Aceita cadastrar cartão no Firebase (Blaze com cota grátis), caso opte por ele?
+## 8. Respostas e pendências
+
+Respondido pelo Ivan em 29/10/2026:
+- **Foco é Android.** O compartilhamento via Web Share Target cobre o caso principal; o Atalho do iOS
+  sai da Etapa A (fica como item opcional). Publicação começa pela Play Store via TWA.
+- **Local** é pensando em publicar o app; **Firebase** é alternativa ao PC de casa como servidor
+  (ver seção 6b).
+
+Ainda em aberto:
+- Aceita cadastrar cartão no Firebase (Blaze com cota grátis e alerta de orçamento)?
+- Publicar já com conta/sincronização, ou primeiro só a versão local e a conta depois?
 
 ## Fontes
 - Firebase, mudanças no Cloud Storage (Blaze obrigatório desde 03/02/2026):
