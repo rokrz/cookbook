@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle2, Clock, Heart, Plus, Search } from 'lucide-react'
-import { buildRecipeFilter, recipesCol, type Category, type LibraryFilter, type Recipe } from '../lib/pb'
+import { CheckCircle2, Clock, Heart, Link2, Plus, Search } from 'lucide-react'
+import { isIncomplete, store, type Category, type LibraryFilter, type Recipe } from '../data'
+import { detectPlatform, PLATFORM_LABELS } from '../lib/links'
 import { errorMessage } from '../lib/errors'
 import RecipeImage from './RecipeImage'
 
 interface Props {
   categories: Category[]
-  fileToken: string
-  onRefreshToken: () => void
 }
 
 function filterKey(f: LibraryFilter) {
@@ -19,7 +18,7 @@ function parseFilterKey(key: string): LibraryFilter {
   return key as LibraryFilter
 }
 
-export default function Library({ categories, fileToken, onRefreshToken }: Props) {
+export default function Library({ categories }: Props) {
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
   const [filter, setFilter] = useState<LibraryFilter>('all')
@@ -34,8 +33,8 @@ export default function Library({ categories, fileToken, onRefreshToken }: Props
   useEffect(() => {
     let cancelled = false
     setError('')
-    recipesCol()
-      .getFullList({ filter: buildRecipeFilter(debounced, filter), sort: '-created', expand: 'category' })
+    store
+      .listRecipes(debounced, filter)
       .then((list) => !cancelled && setRecipes(list))
       .catch((e) => !cancelled && setError(errorMessage(e)))
     return () => {
@@ -43,14 +42,9 @@ export default function Library({ categories, fileToken, onRefreshToken }: Props
     }
   }, [debounced, filter])
 
-  // Novo token sempre que a lista é recarregada, como as URLs assinadas da v1.
-  useEffect(() => {
-    if (recipes) onRefreshToken()
-  }, [recipes, onRefreshToken])
-
   async function toggle(recipe: Recipe, field: 'favorite' | 'tested') {
     try {
-      const updated = await recipesCol().update(recipe.id, { [field]: !recipe[field] }, { expand: 'category' })
+      const updated = await store.updateRecipe(recipe.id, { [field]: !recipe[field] })
       setRecipes((list) => list?.map((r) => (r.id === updated.id ? updated : r)) ?? null)
     } catch (e) {
       setError(errorMessage(e))
@@ -66,9 +60,14 @@ export default function Library({ categories, fileToken, onRefreshToken }: Props
           <h1>Suas receitas</h1>
           <p className="muted">Tudo o que você já guardou, num só lugar.</p>
         </div>
-        <a className="button primary" href="#/nova">
-          <Plus size={18} aria-hidden /> Adicionar receita
-        </a>
+        <div className="welcome-actions">
+          <a className="button" href="#/salvar">
+            <Link2 size={18} aria-hidden /> Salvar link
+          </a>
+          <a className="button primary" href="#/nova">
+            <Plus size={18} aria-hidden /> Adicionar receita
+          </a>
+        </div>
       </div>
 
       <div className="toolbar">
@@ -90,6 +89,7 @@ export default function Library({ categories, fileToken, onRefreshToken }: Props
           <option value="all">Todas</option>
           <option value="favorite">Favoritas</option>
           <option value="tested">Já testadas</option>
+          <option value="incomplete">Para completar</option>
           {categories.length > 0 && (
             <optgroup label="Categorias">
               {categories.map((c) => (
@@ -115,10 +115,15 @@ export default function Library({ categories, fileToken, onRefreshToken }: Props
       {isEmptyNotebook && (
         <div className="empty">
           <h2>Seu caderno ainda está em branco</h2>
-          <p className="muted">Comece pela receita que você mais faz em casa.</p>
-          <a className="button primary" href="#/nova">
-            <Plus size={18} aria-hidden /> Primeira receita
-          </a>
+          <p className="muted">Comece pela receita que você mais faz em casa, ou guarde o link de um post para ver depois.</p>
+          <div className="welcome-actions">
+            <a className="button" href="#/salvar">
+              <Link2 size={18} aria-hidden /> Salvar um link
+            </a>
+            <a className="button primary" href="#/nova">
+              <Plus size={18} aria-hidden /> Primeira receita
+            </a>
+          </div>
         </div>
       )}
 
@@ -130,12 +135,21 @@ export default function Library({ categories, fileToken, onRefreshToken }: Props
       )}
 
       <div className="grid">
-        {recipes?.map((r) => (
+        {recipes?.map((r) => {
+          const platform = detectPlatform(r.source_url)
+          return (
           <article key={r.id} className="card">
             <a href={`#/receita/${r.id}`} className="card-link">
-              <RecipeImage recipe={r} token={fileToken} thumb="480x360" onRefreshToken={onRefreshToken} className="card-image" />
+              <RecipeImage recipe={r} size="thumb" className="card-image" />
               <div className="card-body">
-                {r.expand?.category && <span className="tag">{r.expand.category.name}</span>}
+                <div className="tags">
+                  {r.categoryName && <span className="tag">{r.categoryName}</span>}
+                  {isIncomplete(r) && (
+                    <span className="tag link-only">
+                      <Link2 size={12} aria-hidden /> Só o link{platform && platform !== 'site' ? ` · ${PLATFORM_LABELS[platform]}` : ''}
+                    </span>
+                  )}
+                </div>
                 <h3>{r.title}</h3>
                 {r.prep_minutes > 0 && (
                   <span className="muted small">
@@ -163,7 +177,8 @@ export default function Library({ categories, fileToken, onRefreshToken }: Props
               </button>
             </div>
           </article>
-        ))}
+          )
+        })}
       </div>
     </section>
   )

@@ -1,13 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { ImagePlus, Trash2, X } from 'lucide-react'
-import { currentUserId, recipesCol, type Category, type Recipe } from '../lib/pb'
+import { store, type Category, type Recipe, type RecipeFields } from '../data'
 import { errorMessage } from '../lib/errors'
 import { prepareImage } from '../lib/image'
 import { navigate } from '../App'
+import CategoryPicker from './CategoryPicker'
 
 interface Props {
   id?: string
   categories: Category[]
+  onCategoryCreated: () => Promise<void>
 }
 
 interface FormState {
@@ -51,7 +53,7 @@ function fromRecipe(r: Recipe): FormState {
   }
 }
 
-export default function RecipeForm({ id, categories }: Props) {
+export default function RecipeForm({ id, categories, onCategoryCreated }: Props) {
   const [form, setForm] = useState<FormState>(EMPTY)
   const [original, setOriginal] = useState<Recipe | null>(null)
   const [newImage, setNewImage] = useState<File | null>(null)
@@ -63,8 +65,8 @@ export default function RecipeForm({ id, categories }: Props) {
 
   useEffect(() => {
     if (!id) return
-    recipesCol()
-      .getOne(id)
+    store
+      .getRecipe(id)
       .then((r) => {
         setOriginal(r)
         setForm(fromRecipe(r))
@@ -100,19 +102,17 @@ export default function RecipeForm({ id, categories }: Props) {
     if (!form.title.trim()) return setError('Dê um nome para a receita.')
     setBusy(true)
     setError('')
-    const data: Record<string, unknown> = {
+    const data: RecipeFields = {
       ...form,
       title: form.title.trim(),
       source_url: form.source_url.trim(),
       prep_minutes: form.prep_minutes ? Number(form.prep_minutes) : 0,
     }
-    // Trocar a foto ou limpá-la faz o PocketBase apagar o arquivo antigo.
-    if (newImage) data.image = newImage
-    else if (removeImage) data.image = null
+    const image = newImage ?? (removeImage ? null : undefined)
     try {
       const saved = original
-        ? await recipesCol().update(original.id, data)
-        : await recipesCol().create({ ...data, user: currentUserId() })
+        ? await store.updateRecipe(original.id, data, image)
+        : await store.createRecipe(data, image)
       navigate({ name: 'detail', id: saved.id })
     } catch (err) {
       setError(errorMessage(err))
@@ -124,7 +124,7 @@ export default function RecipeForm({ id, categories }: Props) {
     if (!original || !window.confirm(`Excluir "${original.title}"? Essa ação não pode ser desfeita.`)) return
     setBusy(true)
     try {
-      await recipesCol().delete(original.id)
+      await store.deleteRecipe(original.id)
       navigate({ name: 'library' })
     } catch (err) {
       setError(errorMessage(err))
@@ -147,17 +147,15 @@ export default function RecipeForm({ id, categories }: Props) {
           <input required maxLength={200} value={form.title} onChange={(e) => set('title', e.target.value)} />
         </label>
         <div className="row">
-          <label>
-            Categoria
-            <select value={form.category} onChange={(e) => set('category', e.target.value)}>
-              <option value="">Sem categoria</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="field">
+            <span>Categoria</span>
+            <CategoryPicker
+              value={form.category}
+              categories={categories}
+              onChange={(c) => set('category', c)}
+              onCreated={onCategoryCreated}
+            />
+          </div>
           <label>
             Rendimento
             <input placeholder="Ex.: 8 fatias" maxLength={100} value={form.servings} onChange={(e) => set('servings', e.target.value)} />

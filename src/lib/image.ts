@@ -34,3 +34,25 @@ export async function prepareImage(file: File): Promise<File> {
   if (file.size > MAX_IMAGE_BYTES) throw new Error('A foto deve ter no máximo 5 MB.')
   return file
 }
+
+const THUMB_W = 480
+const THUMB_H = 360
+
+// Miniatura 480x360 recortada ao centro, como o thumb "480x360" do PocketBase.
+export async function makeThumbnail(file: Blob): Promise<Blob | null> {
+  let bitmap: ImageBitmap
+  try {
+    bitmap = await createImageBitmap(file)
+  } catch {
+    return null
+  }
+  const scale = Math.max(THUMB_W / bitmap.width, THUMB_H / bitmap.height)
+  const w = bitmap.width * scale
+  const h = bitmap.height * scale
+  const canvas = document.createElement('canvas')
+  canvas.width = THUMB_W
+  canvas.height = THUMB_H
+  canvas.getContext('2d')!.drawImage(bitmap, (THUMB_W - w) / 2, (THUMB_H - h) / 2, w, h)
+  bitmap.close()
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.8))
+}

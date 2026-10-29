@@ -1,23 +1,43 @@
 import { useEffect, useState } from 'react'
 import { CookingPot } from 'lucide-react'
-import { imageUrl, type Recipe } from '../lib/pb'
+import { store, type ImageSize, type Recipe } from '../data'
 
 interface Props {
   recipe: Recipe
-  token: string
-  thumb?: string
-  onRefreshToken: () => void
+  size: ImageSize
   className?: string
 }
 
-// Foto protegida; se o token expirar, pede um novo uma vez e tenta de novo.
-export default function RecipeImage({ recipe, token, thumb, onRefreshToken, className }: Props) {
-  const [failedToken, setFailedToken] = useState('')
-  const src = imageUrl(recipe, token, thumb)
+// Foto da receita. Se falhar (token do servidor expirado), busca um endereço novo uma vez.
+export default function RecipeImage({ recipe, size, className }: Props) {
+  const [src, setSrc] = useState('')
+  const [attempt, setAttempt] = useState(0)
+  const [failed, setFailed] = useState(false)
 
-  useEffect(() => setFailedToken(''), [recipe.image])
+  useEffect(() => {
+    setAttempt(0)
+    setFailed(false)
+  }, [recipe.id, recipe.image])
 
-  if (!src || failedToken === token) {
+  useEffect(() => {
+    let release: (() => void) | undefined
+    let cancelled = false
+    setSrc('')
+    store
+      .imageSource(recipe, size, attempt > 0)
+      .then((source) => {
+        if (cancelled) return source?.release?.()
+        release = source?.release
+        setSrc(source?.src ?? '')
+      })
+      .catch(() => !cancelled && setFailed(true))
+    return () => {
+      cancelled = true
+      release?.()
+    }
+  }, [recipe.id, recipe.image, size, attempt])
+
+  if (!src || failed) {
     return (
       <div className={`image-placeholder ${className ?? ''}`} aria-hidden>
         <CookingPot size={36} />
@@ -31,12 +51,7 @@ export default function RecipeImage({ recipe, token, thumb, onRefreshToken, clas
       src={src}
       alt={recipe.title}
       loading="lazy"
-      onError={() => {
-        if (failedToken !== token) {
-          setFailedToken(token)
-          onRefreshToken()
-        }
-      }}
+      onError={() => (attempt === 0 ? setAttempt(1) : setFailed(true))}
     />
   )
 }

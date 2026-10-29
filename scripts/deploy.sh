@@ -8,7 +8,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 cd "$ROOT"
 npm ci
-npm run build
+# Versão com login, guardando as receitas neste PocketBase.
+VITE_BACKEND=pocketbase npm run build
 
 mkdir -p "$PB_DIR/pb_public" "$PB_DIR/pb_migrations"
 rm -rf "$PB_DIR/pb_public/"*

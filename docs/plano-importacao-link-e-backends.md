@@ -1,6 +1,6 @@
 # Plano: salvar por link, compartilhar para o app, categorias rápidas e opções de backend
 
-Data: 29/10/2026 · Situação: análise e plano, nada implementado ainda.
+Data: 29/10/2026 · Situação: Etapa A (salvar link, compartilhar no Android, categoria na hora) e v1 local (IndexedDB, offline, backup) implementadas em 29/10/2026.
 Base: app "Meu Caderno de Receitas" (React + TS + Vite, PWA) com PocketBase hospedado no PC do Ivan
 (ver `plano-implementacao-pocketbase.md`).
 

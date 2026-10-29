@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { BookOpen } from 'lucide-react'
-import { pb } from '../lib/pb'
+import type { Auth } from '../data'
 import { errorMessage } from '../lib/errors'
 
-export default function LoginScreen() {
+export default function LoginScreen({ auth }: { auth: Auth }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -14,7 +14,7 @@ export default function LoginScreen() {
     setBusy(true)
     setError('')
     try {
-      await pb.collection('users').authWithPassword(email.trim(), password)
+      await auth.login(email.trim(), password)
     } catch (err) {
       setError(errorMessage(err))
     } finally {

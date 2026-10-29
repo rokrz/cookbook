@@ -1,26 +1,25 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, CheckCircle2, Clock, ExternalLink, Heart, Pencil, Users } from 'lucide-react'
-import { recipesCol, type Recipe } from '../lib/pb'
+import { isIncomplete, store, type Recipe } from '../data'
+import { detectPlatform, PLATFORM_LABELS } from '../lib/links'
 import { errorMessage } from '../lib/errors'
 import RecipeImage from './RecipeImage'
 
 interface Props {
   id: string
-  fileToken: string
-  onRefreshToken: () => void
 }
 
 function lines(text: string) {
   return text.split('\n').map((l) => l.trim()).filter(Boolean)
 }
 
-export default function RecipeDetail({ id, fileToken, onRefreshToken }: Props) {
+export default function RecipeDetail({ id }: Props) {
   const [recipe, setRecipe] = useState<Recipe | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    recipesCol()
-      .getOne(id, { expand: 'category' })
+    store
+      .getRecipe(id)
       .then(setRecipe)
       .catch((e) => setError(errorMessage(e)))
   }, [id])
@@ -29,6 +28,8 @@ export default function RecipeDetail({ id, fileToken, onRefreshToken }: Props) {
   if (!recipe) return <p className="muted">Carregando receita…</p>
 
   const ingredients = lines(recipe.ingredients)
+  const platform = detectPlatform(recipe.source_url)
+  const sourceLabel = platform && platform !== 'site' ? `Abrir post no ${PLATFORM_LABELS[platform]}` : 'Abrir receita original'
 
   return (
     <article className="detail">
@@ -42,11 +43,11 @@ export default function RecipeDetail({ id, fileToken, onRefreshToken }: Props) {
       </div>
 
       {recipe.image && (
-        <RecipeImage recipe={recipe} token={fileToken} thumb="1200x0" onRefreshToken={onRefreshToken} className="detail-image" />
+        <RecipeImage recipe={recipe} size="full" className="detail-image" />
       )}
 
       <header className="detail-header">
-        {recipe.expand?.category && <span className="tag">{recipe.expand.category.name}</span>}
+        {recipe.categoryName && <span className="tag">{recipe.categoryName}</span>}
         <h1>{recipe.title}</h1>
         <div className="meta">
           {recipe.prep_minutes > 0 && (
@@ -72,6 +73,21 @@ export default function RecipeDetail({ id, fileToken, onRefreshToken }: Props) {
         </div>
       </header>
 
+      {isIncomplete(recipe) ? (
+        <section className="link-only-box">
+          <p>Esta receita foi salva só com o link. Abra o post para ver os detalhes e, quando quiser, complete aqui.</p>
+          <div className="welcome-actions">
+            {recipe.source_url && (
+              <a className="button primary" href={recipe.source_url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink size={18} aria-hidden /> {sourceLabel}
+              </a>
+            )}
+            <a className="button" href={`#/editar/${recipe.id}`}>
+              <Pencil size={18} aria-hidden /> Completar receita
+            </a>
+          </div>
+        </section>
+      ) : (
       <div className="detail-columns">
         <section>
           <h2>Ingredientes</h2>
@@ -90,6 +106,7 @@ export default function RecipeDetail({ id, fileToken, onRefreshToken }: Props) {
           {recipe.instructions ? <p className="prewrap">{recipe.instructions}</p> : <p className="muted">Sem instruções ainda.</p>}
         </section>
       </div>
+      )}
 
       {recipe.notes && (
         <section className="notes">
@@ -98,7 +115,7 @@ export default function RecipeDetail({ id, fileToken, onRefreshToken }: Props) {
         </section>
       )}
 
-      {recipe.source_url && (
+      {recipe.source_url && !isIncomplete(recipe) && (
         <a className="source" href={recipe.source_url} target="_blank" rel="noopener noreferrer">
           <ExternalLink size={16} aria-hidden /> Ver fonte original
         </a>

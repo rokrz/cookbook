@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Check, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react'
-import { categoriesCol, currentUserId, pb, SUGGESTED_CATEGORIES, type Category } from '../lib/pb'
+import { store, SUGGESTED_CATEGORIES, type Category } from '../data'
 import { errorMessage } from '../lib/errors'
 
 interface Props {
@@ -33,19 +33,19 @@ export default function Categories({ categories, onChanged }: Props) {
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
-    if (await run(() => categoriesCol().create({ user: currentUserId(), name: trimmed }))) setName('')
+    if (await run(() => store.createCategory(trimmed))) setName('')
   }
 
   async function rename(e: FormEvent) {
     e.preventDefault()
     if (!editing?.name.trim()) return
     const { id, name: newName } = editing
-    if (await run(() => categoriesCol().update(id, { name: newName.trim() }))) setEditing(null)
+    if (await run(() => store.renameCategory(id, newName))) setEditing(null)
   }
 
   function remove(c: Category) {
     if (!window.confirm(`Excluir a categoria "${c.name}"? As receitas dela ficam sem categoria.`)) return
-    run(() => categoriesCol().delete(c.id))
+    run(() => store.deleteCategory(c.id))
   }
 
   // Cria em lote só as sugeridas que ainda não existem (sem diferenciar maiúsculas).
@@ -53,12 +53,7 @@ export default function Categories({ categories, onChanged }: Props) {
     const existing = new Set(categories.map((c) => c.name.toLocaleLowerCase('pt-BR')))
     const missing = SUGGESTED_CATEGORIES.filter((n) => !existing.has(n.toLocaleLowerCase('pt-BR')))
     if (!missing.length) return setError('Todas as categorias sugeridas já existem.')
-    run(async () => {
-      const user = currentUserId()
-      const batch = pb.createBatch()
-      for (const n of missing) batch.collection('categories').create({ user, name: n })
-      await batch.send()
-    })
+    run(() => store.createCategories(missing))
   }
 
   return (

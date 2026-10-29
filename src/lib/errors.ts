@@ -21,6 +21,9 @@ export function errorMessage(err: unknown): string {
     if (err.status === 404) return 'Registro não encontrado.'
     return err.message || 'Algo deu errado.'
   }
+  // IndexedDB: nome repetido ou armazenamento cheio.
+  if (err instanceof DOMException && err.name === 'ConstraintError') return 'Já existe um registro com esse nome.'
+  if (err instanceof DOMException && err.name === 'QuotaExceededError') return 'Sem espaço no aparelho. Libere espaço ou remova fotos.'
   if (err instanceof Error) return err.message
   return 'Algo deu errado.'
 }
