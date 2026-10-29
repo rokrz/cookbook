@@ -1,26 +1,34 @@
 # Meu Caderno de Receitas
 
-App pessoal de receitas (React + TypeScript + Vite) com backend **PocketBase** hospedado em casa.
-Endereço de produção: `https://bokerzcraft.duckdns.org:PORTA` (troque `PORTA` pela porta pública do seu proxy HTTPS).
+App de receitas (React + TypeScript + Vite, PWA) que roda de dois jeitos:
 
-O plano completo está em `docs/plano-implementacao-pocketbase.md`. Para instalar na máquina Linux, siga [`docs/roteiro-setup-linux.md`](docs/roteiro-setup-linux.md) (detalhes em [`docs/instalacao-linux.md`](docs/instalacao-linux.md)).
+- **Local (padrão, versão para publicar):** tudo fica no aparelho (IndexedDB), sem conta e funcionando sem internet. Backup por arquivo.
+- **PocketBase (`VITE_BACKEND=pocketbase`):** receitas no servidor PocketBase hospedado em casa, com login.
+  Endereço de produção: `https://bokerzcraft.duckdns.org:PORTA`. Os scripts `scripts/deploy.*` já compilam neste modo.
+
+Planos: `docs/plano-implementacao-pocketbase.md` (servidor) e `docs/plano-importacao-link-e-backends.md` (salvar por link, compartilhamento, versão local). Para instalar o servidor no Linux, siga [`docs/roteiro-setup-linux.md`](docs/roteiro-setup-linux.md).
 
 ## O que já funciona
 
-- Login por e-mail e senha (sem cadastro público; contas criadas no painel).
-- Biblioteca com busca por nome, ingredientes e anotações, filtros por favoritas, testadas e categoria.
-- Criar, ver, editar e excluir receitas, com foto protegida (troca e remoção apagam o arquivo antigo).
-- Fotos grandes reduzidas no navegador antes do envio (até 2000 px; limite de 5 MB).
+- **Salvar link:** guardar um post do Instagram, TikTok, Facebook, Pinterest ou site só com link, nome e categoria. Links repetidos são avisados (mesmo com parâmetros de rastreio diferentes). Receitas assim aparecem com o selo "Só o link" e no filtro "Para completar".
+- **Menu Compartilhar do Android:** com o app instalado ("Adicionar à tela inicial"), "Compartilhar → Receitas" em outro app abre o Salvar link já preenchido (`share_target` no manifesto). No iPhone isso não existe para apps web; use o botão "Colar".
+- **Categoria na hora:** "+ Nova categoria…" no seletor do Salvar link e do formulário completo. Nome repetido seleciona a existente.
+- **Sem internet:** service worker (`public/sw.js`) guarda o app; no modo local tudo funciona offline.
+- **Backup:** baixar um arquivo `.json` com receitas, categorias e fotos; restaurar no modo local. No modo PocketBase, o backup baixado serve para levar o caderno para a versão local.
+- Biblioteca com busca (sem diferenciar acentos no modo local), filtros por favoritas, testadas, para completar e categoria.
+- Criar, ver, editar e excluir receitas, com foto (reduzida no navegador até 2000 px; limite de 5 MB) e miniatura.
 - Categorias: criar, renomear, excluir (receitas ficam sem categoria) e adicionar as sugeridas.
-- Layout responsivo e manifesto PWA.
+- Login por e-mail e senha só no modo PocketBase (sem cadastro público; contas criadas no painel).
 
 ## Estrutura
 
 ```text
 ├── src/
-│   ├── App.tsx              casca, rotas por hash (#/nova, #/receita/:id …)
-│   ├── components/          Login, Biblioteca, Formulário, Detalhe, Categorias
-│   └── lib/                 cliente PocketBase, erros, preparo de imagem
+│   ├── App.tsx              casca, rotas por hash (#/nova, #/salvar, #/receita/:id …)
+│   ├── components/          Biblioteca, Salvar link, Formulário, Detalhe, Categorias, Backup, Login
+│   ├── data/                camada de dados: LocalStore (IndexedDB), PocketBaseStore, backup
+│   └── lib/                 links e compartilhamento, erros, imagens
+├── public/                  manifesto (share_target), ícones e service worker
 ├── pocketbase/pb_migrations/ coleções, regras de acesso e configurações do servidor
 ├── deploy/                  serviço systemd e exemplos de Caddy/nginx
 ├── scripts/                 deploy.sh (Linux) e deploy.ps1 (Windows)
@@ -28,6 +36,18 @@ O plano completo está em `docs/plano-implementacao-pocketbase.md`. Para instala
 ```
 
 ## Desenvolvimento local
+
+Modo local (sem servidor):
+
+```bash
+npm install
+npm run dev
+```
+
+Para testar o menu Compartilhar sem celular, abra `http://localhost:5173/?text=Olha%20https://www.instagram.com/p/abc/`.
+O service worker só é registrado no build (`npm run build && npm run preview`).
+
+Modo PocketBase:
 
 1. Baixe o PocketBase (v0.23 ou superior; testado com v0.40.6) em <https://github.com/pocketbase/pocketbase/releases> e coloque o executável em `pocketbase/`.
 2. Copie as migrações e suba o servidor:
@@ -40,10 +60,27 @@ O plano completo está em `docs/plano-implementacao-pocketbase.md`. Para instala
 3. Em `http://127.0.0.1:8090/_/`, crie seu usuário na coleção `users`.
 4. Na raiz do projeto:
    ```bash
-   cp .env.example .env
+   cp .env.example .env   # e defina VITE_BACKEND=pocketbase
    npm install
    npm run dev
    ```
+
+## APK Android
+
+O app Android usa Capacitor: o build (`dist/`) vai dentro do APK, funciona sem internet e os dados ficam no aparelho.
+Ele aparece no menu Compartilhar para links e textos (intent `SEND text/plain` em `MainActivity.java`).
+
+- **Pelo GitHub:** cada push em `main` ou `claude/**` roda o workflow **APK Android** (`.github/workflows/android.yml`).
+  O APK fica em *Actions → APK Android → execução → Artifacts → caderno-de-receitas-apk* (um `.zip` com `caderno-de-receitas.apk`).
+- **Na sua máquina** (precisa do Android SDK 36 e Java 21):
+  ```bash
+  npm run build && npx cap sync android
+  cd android && ./gradlew assembleDebug
+  # APK em android/app/build/outputs/apk/debug/app-debug.apk
+  ```
+
+O APK é assinado com a chave de teste `android/keystore/caderno-dev.jks` (senha `caderno-dev`), sempre a mesma, para
+instalar versões novas por cima sem perder as receitas. Para a Play Store, gere outra chave e guarde fora do repositório.
 
 ## Produção (PC de casa)
 

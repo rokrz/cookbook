@@ -5,7 +5,10 @@ $ErrorActionPreference = "Stop"
 
 Set-Location (Join-Path $PSScriptRoot "..")
 npm ci
+# Versão com login, guardando as receitas neste PocketBase.
+$env:VITE_BACKEND = "pocketbase"
 npm run build
+Remove-Item Env:VITE_BACKEND
 
 New-Item -ItemType Directory -Force "$PbDir\pb_public", "$PbDir\pb_migrations" | Out-Null
 Remove-Item "$PbDir\pb_public\*" -Recurse -Force -ErrorAction SilentlyContinue
