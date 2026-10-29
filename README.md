@@ -71,7 +71,9 @@ O app Android usa Capacitor: o build (`dist/`) vai dentro do APK, funciona sem i
 Ele aparece no menu Compartilhar para links e textos (intent `SEND text/plain` em `MainActivity.java`).
 
 - **Pelo GitHub:** cada push em `main` ou `claude/**` roda o workflow **APK Android** (`.github/workflows/android.yml`).
-  O APK fica em *Actions → APK Android → execução → Artifacts → caderno-de-receitas-apk* (um `.zip` com `caderno-de-receitas.apk`).
+  O último APK da `main` fica sempre em
+  <https://github.com/rokrz/cookbook/releases/download/apk-latest/caderno-de-receitas.apk> (release `apk-latest`).
+  Em outras branches, o APK fica só em *Actions → APK Android → execução → Artifacts*.
 - **Na sua máquina** (precisa do Android SDK 36 e Java 21):
   ```bash
   npm run build && npx cap sync android
