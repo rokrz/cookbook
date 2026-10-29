@@ -65,6 +65,23 @@ Modo PocketBase:
    npm run dev
    ```
 
+## APK Android
+
+O app Android usa Capacitor: o build (`dist/`) vai dentro do APK, funciona sem internet e os dados ficam no aparelho.
+Ele aparece no menu Compartilhar para links e textos (intent `SEND text/plain` em `MainActivity.java`).
+
+- **Pelo GitHub:** cada push em `main` ou `claude/**` roda o workflow **APK Android** (`.github/workflows/android.yml`).
+  O APK fica em *Actions → APK Android → execução → Artifacts → caderno-de-receitas-apk* (um `.zip` com `caderno-de-receitas.apk`).
+- **Na sua máquina** (precisa do Android SDK 36 e Java 21):
+  ```bash
+  npm run build && npx cap sync android
+  cd android && ./gradlew assembleDebug
+  # APK em android/app/build/outputs/apk/debug/app-debug.apk
+  ```
+
+O APK é assinado com a chave de teste `android/keystore/caderno-dev.jks` (senha `caderno-dev`), sempre a mesma, para
+instalar versões novas por cima sem perder as receitas. Para a Play Store, gere outra chave e guarde fora do repositório.
+
 ## Produção (PC de casa)
 
 1. Coloque o executável do PocketBase em `/opt/pocketbase` (Linux) ou `C:\pocketbase` (Windows).

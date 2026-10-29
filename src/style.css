@@ -80,7 +80,7 @@ label, .field { display: grid; gap: 0.3rem; font-weight: 500; }
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.75rem clamp(1rem, 4vw, 2rem);
+  padding: calc(0.75rem + env(safe-area-inset-top)) clamp(1rem, 4vw, 2rem) 0.75rem;
   background: color-mix(in srgb, var(--paper) 92%, transparent);
   backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--line);
@@ -91,7 +91,7 @@ label, .field { display: grid; gap: 0.3rem; font-weight: 500; }
 .nav a.active { background: var(--sage); color: white; }
 .nav a:hover:not(.active), .nav button:hover { background: var(--paper-2); }
 
-.main { max-width: 1100px; margin: 0 auto; padding: clamp(1rem, 4vw, 2rem); }
+.main { max-width: 1100px; margin: 0 auto; padding: clamp(1rem, 4vw, 2rem); padding-bottom: calc(clamp(1rem, 4vw, 2rem) + env(safe-area-inset-bottom)); }
 .alert { max-width: 1100px; margin: 1rem auto 0; padding: 0.75rem 1rem; border-radius: 10px; background: #f6dfd8; color: var(--danger); cursor: pointer; }
 .form-error { color: var(--danger); margin: 0.5rem 0; }
 

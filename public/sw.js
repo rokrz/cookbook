@@ -1,9 +1,8 @@
 // Service worker do Meu Caderno de Receitas: guarda o app para abrir sem internet.
 // Os dados das receitas não passam por aqui (ficam no IndexedDB ou no servidor).
 
-const CACHE = 'caderno-v1'
+const CACHE = 'caderno-v2'
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png']
-const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com']
 
 // Guarda a casca do app e os arquivos do build citados no index.html (JS e CSS com hash no nome).
 async function precache() {
@@ -52,8 +51,6 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return
   const url = new URL(request.url)
 
-  // Fontes do Google: cache permanente.
-  if (FONT_HOSTS.includes(url.hostname)) return event.respondWith(cacheFirst(request))
   if (url.origin !== self.location.origin) return
   // API e painel do PocketBase nunca vêm do cache.
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/_/')) return

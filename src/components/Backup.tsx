@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Download, Upload } from 'lucide-react'
+import { Capacitor } from '@capacitor/core'
 import { store } from '../data'
 import { backupFileName, exportBackup, importBackup } from '../data/backup'
 import { LocalStore } from '../data/localStore'
 import { errorMessage } from '../lib/errors'
+import { saveFile } from '../lib/files'
 
 interface Props {
   onRestored: () => Promise<void>
@@ -36,13 +38,7 @@ export default function Backup({ onRestored }: Props) {
     setError('')
     setMessage('')
     try {
-      const blob = await exportBackup(store)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = backupFileName()
-      a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+      if (!(await saveFile(await exportBackup(store), backupFileName()))) return
       const when = new Date().toLocaleString('pt-BR')
       try {
         localStorage.setItem(LAST_KEY, when)
@@ -50,7 +46,11 @@ export default function Backup({ onRestored }: Props) {
         // ignora
       }
       setLast(when)
-      setMessage('Backup gerado. Guarde o arquivo num lugar fora do celular (Drive, e-mail, computador).')
+      setMessage(
+        Capacitor.isNativePlatform()
+          ? 'Backup gerado. Se ainda não escolheu, mande o arquivo para o Drive, e-mail ou computador.'
+          : 'Backup gerado. Guarde o arquivo num lugar fora do celular (Drive, e-mail, computador).',
+      )
     } catch (e) {
       setError(errorMessage(e))
     } finally {
@@ -109,7 +109,7 @@ export default function Backup({ onRestored }: Props) {
       </div>
 
       <p className="muted small">{last ? `Último backup neste aparelho: ${last}.` : 'Nenhum backup feito neste aparelho ainda.'}</p>
-      {isLocal && persisted === false && (
+      {isLocal && persisted === false && !Capacitor.isNativePlatform() && (
         <p className="muted small">
           Dica: instale o app na tela inicial para o navegador proteger seus dados contra limpeza automática.
         </p>
