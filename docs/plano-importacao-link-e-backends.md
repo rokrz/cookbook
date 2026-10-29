@@ -295,9 +295,15 @@ Respondido pelo Ivan em 29/10/2026:
   sincronização com a nuvem roda quando houver conexão. Isso também é exigido para o TWA da Play Store
   passar na verificação de qualidade.
 
-Ainda em aberto:
-- Aceita cadastrar cartão no Firebase (Blaze com cota grátis e alerta de orçamento)?
-- Publicar já com conta/sincronização, ou primeiro só a versão local e a conta depois?
+**Decisão (29/10/2026): a primeira versão publicada é só local.** Sem conta e sem nuvem; backup por
+exportar/importar arquivo. A nuvem (Firebase Blaze ou PocketBase em VPS) fica para uma versão futura.
+
+Consequências para a v1:
+- Camada de dados com `LocalStore` (IndexedDB) + service worker para funcionar offline.
+- Item 3 (preencher nome/foto a partir do link) não tem servidor na v1: fica só link + nome digitado.
+  Exceção possível: tentar o oEmbed do TikTok direto do navegador, se ele aceitar CORS (testar).
+- Itens 1, 2 e 4 entram normalmente. Publicação na Play Store via TWA.
+- O PocketBase continua como servidor pessoal do Ivan até ele migrar para a versão local.
 
 ## Fontes
 - Firebase, mudanças no Cloud Storage (Blaze obrigatório desde 03/02/2026):
