@@ -290,6 +290,10 @@ Respondido pelo Ivan em 29/10/2026:
   sai da Etapa A (fica como item opcional). Publicação começa pela Play Store via TWA.
 - **Local** é pensando em publicar o app; **Firebase** é alternativa ao PC de casa como servidor
   (ver seção 6b).
+- **Usar sem internet é um atrativo grande.** Reforça o "local primeiro": o app precisa de service
+  worker (vite-plugin-pwa) para abrir offline, e toda leitura e gravação acontece no aparelho; a
+  sincronização com a nuvem roda quando houver conexão. Isso também é exigido para o TWA da Play Store
+  passar na verificação de qualidade.
 
 Ainda em aberto:
 - Aceita cadastrar cartão no Firebase (Blaze com cota grátis e alerta de orçamento)?
