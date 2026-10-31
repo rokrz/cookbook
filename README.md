@@ -6,6 +6,8 @@ App de receitas (React + TypeScript + Vite, PWA) que roda de dois jeitos:
 - **PocketBase (`VITE_BACKEND=pocketbase`):** receitas no servidor PocketBase hospedado em casa, com login.
   Endereço de produção: `https://bokerzcraft.duckdns.org:PORTA`. Os scripts `scripts/deploy.*` já compilam neste modo.
 
+Visão geral do projeto: [`docs/visao-geral.md`](docs/visao-geral.md).
+
 Planos: `docs/plano-implementacao-pocketbase.md` (servidor) e `docs/plano-importacao-link-e-backends.md` (salvar por link, compartilhamento, versão local). Para instalar o servidor no Linux, siga [`docs/roteiro-setup-linux.md`](docs/roteiro-setup-linux.md).
 
 ## O que já funciona
