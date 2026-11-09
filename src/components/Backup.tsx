@@ -6,6 +6,8 @@ import { backupFileName, exportBackup, importBackup } from '../data/backup'
 import { LocalStore } from '../data/localStore'
 import { errorMessage } from '../lib/errors'
 import { saveFile } from '../lib/files'
+import { driveAvailable } from '../lib/googleDrive'
+import DriveBackup from './DriveBackup'
 
 interface Props {
   onRestored: () => Promise<void>
@@ -48,7 +50,7 @@ export default function Backup({ onRestored }: Props) {
       setLast(when)
       setMessage(
         Capacitor.isNativePlatform()
-          ? 'Backup gerado. Se ainda não escolheu, mande o arquivo para o Drive, e-mail ou computador.'
+          ? 'Backup gerado. Se ainda não escolheu, mande o arquivo para o e-mail, computador ou outro lugar fora do celular.'
           : 'Backup gerado. Guarde o arquivo num lugar fora do celular (Drive, e-mail, computador).',
       )
     } catch (e) {
@@ -117,6 +119,8 @@ export default function Backup({ onRestored }: Props) {
 
       {message && <p className="notice" role="status">{message}</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
+
+      {driveAvailable() && <DriveBackup onRestored={onRestored} />}
     </section>
   )
 }

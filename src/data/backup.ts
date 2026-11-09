@@ -1,22 +1,26 @@
-import { LocalStore } from './localStore'
+import { LocalStore, upgradeRecipe } from './localStore'
 import { EMPTY_FIELDS, type Category, type Recipe, type Store } from './types'
 
 // Arquivo de backup: JSON com categorias, receitas e fotos (em data URL).
 // Serve também para levar o caderno do PocketBase para a versão local.
 
 const FORMAT = 'meu-caderno-de-receitas'
-const VERSION = 1
+// Versão 2: `categories` (lista) no lugar de `category`. Backups da versão 1 continuam sendo aceitos.
+const VERSION = 2
 
-interface BackupRecipe extends Omit<Recipe, 'categoryName'> {
+interface BackupRecipe extends Omit<Recipe, 'categoryNames'> {
   photo?: string
 }
 
-interface BackupFile {
+// Receita como pode vir num backup antigo.
+type IncomingRecipe = Partial<Omit<BackupRecipe, 'categories'>> & { id: string; category?: string; categories?: string[] }
+
+interface BackupFile<R = BackupRecipe> {
   format: typeof FORMAT
   version: number
   exportedAt: string
   categories: Category[]
-  recipes: BackupRecipe[]
+  recipes: R[]
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -36,7 +40,7 @@ export async function exportBackup(store: Store): Promise<Blob> {
   const categories = await store.listCategories()
   const recipes: BackupRecipe[] = []
   for (const r of await store.listRecipes('', 'all')) {
-    const { categoryName: _, ...rest } = r
+    const { categoryNames: _, ...rest } = r
     const blob = await store.imageBlob(r).catch(() => null)
     recipes.push(blob ? { ...rest, photo: await blobToDataUrl(blob) } : rest)
   }
@@ -49,7 +53,7 @@ export function backupFileName(date = new Date()): string {
 }
 
 export async function importBackup(store: LocalStore, file: Blob) {
-  let data: BackupFile
+  let data: BackupFile<IncomingRecipe>
   try {
     data = JSON.parse(await file.text())
   } catch {
@@ -63,13 +67,13 @@ export async function importBackup(store: LocalStore, file: Blob) {
   const recipes = await Promise.all(
     data.recipes.map(async ({ photo, ...r }) => ({
       // Campos que faltarem (backup antigo) recebem o valor padrão.
-      recipe: {
+      recipe: upgradeRecipe({
         ...EMPTY_FIELDS,
         ...r,
         image: r.image ?? '',
         created: r.created || new Date().toISOString(),
         updated: r.updated || new Date().toISOString(),
-      },
+      }),
       image: photo ? await dataUrlToBlob(photo).catch(() => null) : null,
     })),
   )

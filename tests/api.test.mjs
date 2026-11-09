@@ -54,11 +54,17 @@ function img(shade) {
 }
 
 const fd = new FormData()
-Object.entries({ user: aId, title: 'Bolo de cenoura', category: catsA[0].id, ingredients: '3 cenouras\nfarinha', notes: 'menos açúcar', favorite: 'true' }).forEach(([k, v]) => fd.append(k, v))
+Object.entries({ user: aId, title: 'Bolo de cenoura', ingredients: '3 cenouras\nfarinha', notes: 'menos açúcar', favorite: 'true' }).forEach(([k, v]) => fd.append(k, v))
+// Duas categorias na mesma receita.
+fd.append('categories', catsA[0].id)
+fd.append('categories', catsA[1].id)
 fd.append('image', img(200), 'bolo.png')
 const r1 = await A.collection('recipes').create(fd)
-await A.collection('recipes').create({ user: aId, title: 'Sanduíche', tested: true, category: catsA[1].id })
+await A.collection('recipes').create({ user: aId, title: 'Sanduíche', tested: true, categories: [catsA[1].id] })
 ok(Boolean(r1.image), 'receita criada com foto')
+ok(r1.categories.length === 2, 'receita com duas categorias')
+const inCat = (c) => A.collection('recipes').getFullList({ filter: A.filter('categories.id ?= {:c}', { c }) })
+ok((await inCat(catsA[0].id)).length === 1 && (await inCat(catsA[1].id)).length === 2, 'filtro por categoria encontra receitas com várias categorias')
 
 const filt = (q) => A.collection('recipes').getFullList({ filter: A.filter('(title ~ {:q} || ingredients ~ {:q} || notes ~ {:q})', { q }) })
 ok((await filt('cenoura')).length === 1 && (await filt('açúcar')).length === 1 && (await filt('Sandu')).length === 1, 'busca por nome, ingrediente e anotação')
@@ -72,7 +78,10 @@ ok(await rejects(B.collection('recipes').getOne(r1.id)), 'B não abre receita de
 ok(await rejects(B.collection('recipes').update(r1.id, { title: 'hack' })), 'B não edita receita de A')
 ok(await rejects(B.collection('recipes').delete(r1.id)), 'B não exclui receita de A')
 ok(await rejects(B.collection('categories').update(catsA[0].id, { name: 'hack' })), 'B não renomeia categoria de A')
-ok(await rejects(B.collection('recipes').create({ user: bId, title: 'x', category: catsA[0].id })), 'B não associa receita à categoria de A')
+ok(await rejects(B.collection('recipes').create({ user: bId, title: 'x', categories: [catsA[0].id] })), 'B não associa receita à categoria de A')
+const catB = await B.collection('categories').create({ user: bId, name: 'Minha' })
+ok(await rejects(B.collection('recipes').create({ user: bId, title: 'x', categories: [catB.id, catsA[0].id] })), 'B não mistura categoria própria com categoria de A')
+await B.collection('categories').delete(catB.id)
 ok(await rejects(A.collection('recipes').update(r1.id, { user: bId })), 'A não transfere receita para B')
 ok(await rejects(anon.collection('recipes').getFullList().then((l) => { if (!l.length) throw 0 })), 'anônimo não lista nada')
 
@@ -95,7 +104,7 @@ ok(!r1c.image && !fs.readdirSync(dir).some((n) => n.startsWith('novo')), 'remove
 // excluir categoria mantém receitas
 await A.collection('categories').delete(catsA[0].id)
 const after = await A.collection('recipes').getOne(r1.id)
-ok(after.category === '', 'excluir categoria deixa receita sem categoria')
+ok(after.categories.length === 1 && after.categories[0] === catsA[1].id, 'excluir categoria só a tira da receita')
 await A.collection('recipes').delete(r1.id)
 ok(!fs.existsSync(dir) || fs.readdirSync(dir).length === 0, 'excluir receita apaga a pasta de arquivos')
 

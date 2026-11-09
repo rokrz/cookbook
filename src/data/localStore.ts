@@ -20,7 +20,10 @@ interface StoredCategory extends Category {
   updated: string
 }
 
-type StoredRecipe = Omit<Recipe, 'categoryName'>
+type StoredRecipe = Omit<Recipe, 'categoryNames'>
+
+// Formato da versão 1 do banco, com uma única categoria por receita.
+type LegacyRecipe = Omit<StoredRecipe, 'categories'> & { category?: string; categories?: string[] }
 
 interface StoredImage {
   id: string
@@ -30,7 +33,7 @@ interface StoredImage {
 
 interface CadernoDB extends DBSchema {
   categories: { key: string; value: StoredCategory; indexes: { key: string } }
-  recipes: { key: string; value: StoredRecipe; indexes: { source_url: string } }
+  recipes: { key: string; value: StoredRecipe; indexes: { source_url: string; categories: string } }
   images: { key: string; value: StoredImage }
 }
 
@@ -51,8 +54,20 @@ function cleanName(name: string): string {
   return trimmed
 }
 
+// Lista de categorias sem repetição e sem vazios.
+export function uniqueIds(ids: readonly string[] | undefined): string[] {
+  return [...new Set((ids ?? []).filter(Boolean))]
+}
+
+// Converte o formato antigo (category) para o novo (categories), sem perder a categoria.
+export function upgradeRecipe<T extends { category?: string; categories?: string[] }>(r: T): Omit<T, 'category'> & { categories: string[] } {
+  const { category, ...rest } = r
+  return { ...rest, categories: uniqueIds([...(r.categories ?? []), category ?? '']) }
+}
+
 function cleanFields<T extends Partial<RecipeFields>>(fields: T): T {
   const out = { ...fields }
+  if (out.categories !== undefined) out.categories = uniqueIds(out.categories)
   if (out.title !== undefined) {
     out.title = out.title.trim()
     if (!out.title) throw new LocalError('Dê um nome para a receita.')
@@ -77,11 +92,23 @@ export class LocalStore implements Store {
   private db: Promise<IDBPDatabase<CadernoDB>>
 
   constructor(name = 'meu-caderno-de-receitas') {
-    this.db = openDB<CadernoDB>(name, 1, {
-      upgrade(db) {
-        db.createObjectStore('categories', { keyPath: 'id' }).createIndex('key', 'key', { unique: true })
-        db.createObjectStore('recipes', { keyPath: 'id' }).createIndex('source_url', 'source_url')
-        db.createObjectStore('images', { keyPath: 'id' })
+    this.db = openDB<CadernoDB>(name, 2, {
+      async upgrade(db, oldVersion, _newVersion, tx) {
+        if (oldVersion < 1) {
+          db.createObjectStore('categories', { keyPath: 'id' }).createIndex('key', 'key', { unique: true })
+          db.createObjectStore('recipes', { keyPath: 'id' }).createIndex('source_url', 'source_url')
+          db.createObjectStore('images', { keyPath: 'id' })
+        }
+        if (oldVersion < 2) {
+          // Versão 2: várias categorias por receita. A categoria única vira uma lista com ela.
+          const recipes = tx.objectStore('recipes')
+          let cursor = await recipes.openCursor()
+          while (cursor) {
+            await cursor.update(upgradeRecipe(cursor.value as LegacyRecipe) as StoredRecipe)
+            cursor = await cursor.continue()
+          }
+          recipes.createIndex('categories', 'categories', { multiEntry: true })
+        }
       },
     })
   }
@@ -128,13 +155,13 @@ export class LocalStore implements Store {
     await db.put('categories', { ...current, name: clean, key, updated: now() })
   }
 
-  // As receitas da categoria ficam sem categoria.
+  // A categoria sai das receitas; as receitas continuam com as outras categorias que tiverem.
   async deleteCategory(id: string): Promise<void> {
     const db = await this.db
     const tx = db.transaction(['categories', 'recipes'], 'readwrite')
     const recipes = tx.objectStore('recipes')
-    for (const r of await recipes.getAll()) {
-      if (r.category === id) await recipes.put({ ...r, category: '', updated: now() })
+    for (const r of await recipes.index('categories').getAll(id)) {
+      await recipes.put({ ...r, categories: r.categories.filter((c) => c !== id), updated: now() })
     }
     await tx.objectStore('categories').delete(id)
     await tx.done
@@ -143,8 +170,11 @@ export class LocalStore implements Store {
   // ------------------------------------------------------------------ receitas
 
   private async withCategoryNames(list: StoredRecipe[]): Promise<Recipe[]> {
-    const names = new Map((await this.listCategories()).map((c) => [c.id, c.name]))
-    return list.map((r) => ({ ...r, categoryName: names.get(r.category) }))
+    const all = await this.listCategories()
+    return list.map((r) => {
+      const mine = new Set(r.categories)
+      return { ...r, categoryNames: all.filter((c) => mine.has(c.id)).map((c) => c.name) }
+    })
   }
 
   async listRecipes(query: string, filter: LibraryFilter): Promise<Recipe[]> {
@@ -153,7 +183,7 @@ export class LocalStore implements Store {
       if (filter === 'favorite' && !r.favorite) return false
       if (filter === 'tested' && !r.tested) return false
       if (filter === 'incomplete' && !isIncomplete(r)) return false
-      if (typeof filter === 'object' && r.category !== filter.category) return false
+      if (typeof filter === 'object' && !r.categories.includes(filter.category)) return false
       if (q && ![r.title, r.ingredients, r.notes].some((t) => fold(t).includes(q))) return false
       return true
     })
@@ -174,8 +204,11 @@ export class LocalStore implements Store {
     return r ? (await this.withCategoryNames([r]))[0] : null
   }
 
-  private async checkCategory(id: string | undefined) {
-    if (id && !(await (await this.db).get('categories', id))) throw new LocalError('Categoria não encontrada.')
+  private async checkCategories(ids: string[] | undefined) {
+    const db = await this.db
+    for (const id of ids ?? []) {
+      if (!(await db.get('categories', id))) throw new LocalError('Categoria não encontrada.')
+    }
   }
 
   // Prepara a foto (e a miniatura) antes de abrir a transação: IndexedDB não espera trabalho assíncrono externo.
@@ -186,7 +219,7 @@ export class LocalStore implements Store {
 
   async createRecipe(fields: RecipeFields, image?: ImageChange): Promise<Recipe> {
     const clean = cleanFields(fields)
-    await this.checkCategory(clean.category)
+    await this.checkCategories(clean.categories)
     const id = newId()
     const stored = await this.prepareImage(id, image)
     const record: StoredRecipe = { ...clean, id, image: stored ? newId() : '', created: now(), updated: now() }
@@ -201,7 +234,7 @@ export class LocalStore implements Store {
 
   async updateRecipe(id: string, fields: Partial<RecipeFields>, image?: ImageChange): Promise<Recipe> {
     const clean = cleanFields(fields)
-    await this.checkCategory(clean.category)
+    await this.checkCategories(clean.categories)
     const stored = await this.prepareImage(id, image)
     const db = await this.db
     const tx = db.transaction(['recipes', 'images'], 'readwrite')
@@ -268,7 +301,11 @@ export class LocalStore implements Store {
 
     const prepared = await Promise.all(
       recipes.map(async ({ recipe, image }) => ({
-        recipe: { ...recipe, category: idMap.get(recipe.category) ?? '', image: image ? recipe.image || newId() : '' },
+        recipe: {
+          ...recipe,
+          categories: uniqueIds(recipe.categories.map((c) => idMap.get(c) ?? '')),
+          image: image ? recipe.image || newId() : '',
+        },
         image: image ? await this.prepareImage(recipe.id, new File([image], 'foto', { type: image.type })) : null,
       })),
     )

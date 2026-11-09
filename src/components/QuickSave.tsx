@@ -15,7 +15,7 @@ interface Props {
 export default function QuickSave({ categories, onCategoryCreated }: Props) {
   const [url, setUrl] = useState(() => peekShare()?.url ?? '')
   const [title, setTitle] = useState(() => peekShare()?.title ?? '')
-  const [category, setCategory] = useState('')
+  const [selected, setSelected] = useState<string[]>([])
   const [duplicate, setDuplicate] = useState<Recipe | null>(null)
   const [saved, setSaved] = useState<Recipe | null>(null)
   const [busy, setBusy] = useState(false)
@@ -60,7 +60,7 @@ export default function QuickSave({ categories, onCategoryCreated }: Props) {
     setBusy(true)
     setError('')
     try {
-      setSaved(await store.createRecipe({ ...EMPTY_FIELDS, title: title.trim(), source_url: url.trim(), category }))
+      setSaved(await store.createRecipe({ ...EMPTY_FIELDS, title: title.trim(), source_url: url.trim(), categories: selected }))
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -72,7 +72,7 @@ export default function QuickSave({ categories, onCategoryCreated }: Props) {
     setSaved(null)
     setUrl('')
     setTitle('')
-    setCategory('')
+    setSelected([])
   }
 
   if (saved) {
@@ -82,7 +82,7 @@ export default function QuickSave({ categories, onCategoryCreated }: Props) {
           <Check size={32} aria-hidden className="saved-icon" />
           <h1>Receita salva</h1>
           <p className="muted">
-            “{saved.title}” está no seu caderno{saved.categoryName ? ` em ${saved.categoryName}` : ''}. Complete quando quiser.
+            “{saved.title}” está no seu caderno{saved.categoryNames.length ? ` em ${saved.categoryNames.join(', ')}` : ''}. Complete quando quiser.
           </p>
           <div className="welcome-actions">
             <a className="button" href={`#/editar/${saved.id}`}>
@@ -150,8 +150,8 @@ export default function QuickSave({ categories, onCategoryCreated }: Props) {
         </label>
 
         <div className="field">
-          <span>Categoria</span>
-          <CategoryPicker value={category} categories={categories} onChange={setCategory} onCreated={onCategoryCreated} />
+          <span>Categorias</span>
+          <CategoryPicker value={selected} categories={categories} onChange={setSelected} onCreated={onCategoryCreated} />
         </div>
       </fieldset>
 

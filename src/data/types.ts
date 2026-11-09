@@ -7,7 +7,8 @@ export interface Category {
 
 export interface RecipeFields {
   title: string
-  category: string
+  // Ids das categorias da receita (uma receita pode estar em várias).
+  categories: string[]
   ingredients: string
   instructions: string
   notes: string
@@ -24,7 +25,8 @@ export interface Recipe extends RecipeFields {
   image: string
   created: string
   updated: string
-  categoryName?: string
+  // Nomes das categorias, na ordem alfabética, para exibir.
+  categoryNames: string[]
 }
 
 // undefined = manter a foto, null = remover, File = trocar.
@@ -75,7 +77,7 @@ export interface Store {
 
 export const EMPTY_FIELDS: RecipeFields = {
   title: '',
-  category: '',
+  categories: [],
   ingredients: '',
   instructions: '',
   notes: '',

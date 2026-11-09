@@ -9,6 +9,8 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Plugins do próprio app precisam ser registrados antes do super.onCreate.
+        registerPlugin(GoogleDrivePlugin.class);
         super.onCreate(savedInstanceState);
         openShared(getIntent());
     }

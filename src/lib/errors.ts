@@ -6,7 +6,7 @@ const FIELD_LABELS: Record<string, string> = {
   image: 'Foto',
   source_url: 'URL da fonte',
   prep_minutes: 'Tempo de preparo',
-  category: 'Categoria',
+  categories: 'Categorias',
 }
 
 export function errorMessage(err: unknown): string {
