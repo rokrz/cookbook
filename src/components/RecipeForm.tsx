@@ -14,7 +14,7 @@ interface Props {
 
 interface FormState {
   title: string
-  category: string
+  categories: string[]
   servings: string
   prep_minutes: string
   ingredients: string
@@ -27,7 +27,7 @@ interface FormState {
 
 const EMPTY: FormState = {
   title: '',
-  category: '',
+  categories: [],
   servings: '',
   prep_minutes: '',
   ingredients: '',
@@ -41,7 +41,7 @@ const EMPTY: FormState = {
 function fromRecipe(r: Recipe): FormState {
   return {
     title: r.title,
-    category: r.category,
+    categories: r.categories,
     servings: r.servings,
     prep_minutes: r.prep_minutes ? String(r.prep_minutes) : '',
     ingredients: r.ingredients,
@@ -146,16 +146,16 @@ export default function RecipeForm({ id, categories, onCategoryCreated }: Props)
           Nome *
           <input required maxLength={200} value={form.title} onChange={(e) => set('title', e.target.value)} />
         </label>
-        <div className="row">
-          <div className="field">
-            <span>Categoria</span>
-            <CategoryPicker
-              value={form.category}
-              categories={categories}
-              onChange={(c) => set('category', c)}
-              onCreated={onCategoryCreated}
-            />
-          </div>
+        <div className="field">
+          <span>Categorias</span>
+          <CategoryPicker
+            value={form.categories}
+            categories={categories}
+            onChange={(c) => set('categories', c)}
+            onCreated={onCategoryCreated}
+          />
+        </div>
+        <div className="row two">
           <label>
             Rendimento
             <input placeholder="Ex.: 8 fatias" maxLength={100} value={form.servings} onChange={(e) => set('servings', e.target.value)} />

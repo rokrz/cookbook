@@ -143,7 +143,9 @@ export default function Library({ categories }: Props) {
               <RecipeImage recipe={r} size="thumb" className="card-image" />
               <div className="card-body">
                 <div className="tags">
-                  {r.categoryName && <span className="tag">{r.categoryName}</span>}
+                  {r.categoryNames.map((n) => (
+                    <span key={n} className="tag">{n}</span>
+                  ))}
                   {isIncomplete(r) && (
                     <span className="tag link-only">
                       <Link2 size={12} aria-hidden /> Só o link{platform && platform !== 'site' ? ` · ${PLATFORM_LABELS[platform]}` : ''}

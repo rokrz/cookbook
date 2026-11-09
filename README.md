@@ -2,7 +2,7 @@
 
 App de receitas (React + TypeScript + Vite, PWA) que roda de dois jeitos:
 
-- **Local (padrão, versão para publicar):** tudo fica no aparelho (IndexedDB), sem conta e funcionando sem internet. Backup por arquivo.
+- **Local (padrão, versão para publicar):** tudo fica no aparelho (IndexedDB), sem conta e funcionando sem internet. Backup por arquivo e no Google Drive da pessoa.
 - **PocketBase (`VITE_BACKEND=pocketbase`):** receitas no servidor PocketBase hospedado em casa, com login.
   Endereço de produção: `https://bokerzcraft.duckdns.org:PORTA`. Os scripts `scripts/deploy.*` já compilam neste modo.
 
@@ -10,14 +10,15 @@ Planos: `docs/plano-implementacao-pocketbase.md` (servidor) e `docs/plano-import
 
 ## O que já funciona
 
-- **Salvar link:** guardar um post do Instagram, TikTok, Facebook, Pinterest ou site só com link, nome e categoria. Links repetidos são avisados (mesmo com parâmetros de rastreio diferentes). Receitas assim aparecem com o selo "Só o link" e no filtro "Para completar".
+- **Salvar link:** guardar um post do Instagram, TikTok, Facebook, Pinterest ou site só com link, nome e categorias. Links repetidos são avisados (mesmo com parâmetros de rastreio diferentes). Receitas assim aparecem com o selo "Só o link" e no filtro "Para completar".
 - **Menu Compartilhar do Android:** com o app instalado ("Adicionar à tela inicial"), "Compartilhar → Receitas" em outro app abre o Salvar link já preenchido (`share_target` no manifesto). No iPhone isso não existe para apps web; use o botão "Colar".
-- **Categoria na hora:** "+ Nova categoria…" no seletor do Salvar link e do formulário completo. Nome repetido seleciona a existente.
+- **Várias categorias por receita:** escolhidas por botões no Salvar link e no formulário completo; "+ Nova categoria" cria na hora (nome repetido seleciona a existente). Receitas antigas, com uma categoria só, são convertidas automaticamente.
 - **Sem internet:** service worker (`public/sw.js`) guarda o app; no modo local tudo funciona offline.
 - **Backup:** baixar um arquivo `.json` com receitas, categorias e fotos; restaurar no modo local. No modo PocketBase, o backup baixado serve para levar o caderno para a versão local.
+- **Backup no Google Drive:** login com a conta Google, enviar e restaurar backups numa pasta escondida do app no Drive da própria pessoa, com backup automático diário (mantém os 7 últimos). Precisa de uma configuração única no Google Cloud: [`docs/google-drive.md`](docs/google-drive.md).
 - Biblioteca com busca (sem diferenciar acentos no modo local), filtros por favoritas, testadas, para completar e categoria.
 - Criar, ver, editar e excluir receitas, com foto (reduzida no navegador até 2000 px; limite de 5 MB) e miniatura.
-- Categorias: criar, renomear, excluir (receitas ficam sem categoria) e adicionar as sugeridas.
+- Categorias: criar, renomear, excluir (a categoria só sai das receitas) e adicionar as sugeridas.
 - Login por e-mail e senha só no modo PocketBase (sem cadastro público; contas criadas no painel).
 
 ## Estrutura

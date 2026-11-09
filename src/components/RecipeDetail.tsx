@@ -47,7 +47,13 @@ export default function RecipeDetail({ id }: Props) {
       )}
 
       <header className="detail-header">
-        {recipe.categoryName && <span className="tag">{recipe.categoryName}</span>}
+        {recipe.categoryNames.length > 0 && (
+          <div className="tags">
+            {recipe.categoryNames.map((n) => (
+              <span key={n} className="tag">{n}</span>
+            ))}
+          </div>
+        )}
         <h1>{recipe.title}</h1>
         <div className="meta">
           {recipe.prep_minutes > 0 && (

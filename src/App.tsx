@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { BookOpen, FolderOpen, HardDriveDownload, Link2, LogOut, Plus } from 'lucide-react'
 import { store, type Category } from './data'
+import { autoBackupIfDue } from './data/driveBackup'
 import { errorMessage } from './lib/errors'
 import LoginScreen from './components/LoginScreen'
 import Library from './components/Library'
@@ -75,6 +76,15 @@ export default function App() {
   useEffect(() => {
     if (loggedIn) reloadCategories()
   }, [loggedIn, reloadCategories])
+
+  // Backup automático no Google Drive (se ligado): ao abrir o app e ao voltar para ele.
+  useEffect(() => {
+    if (!loggedIn) return
+    const check = () => document.visibilityState === 'visible' && autoBackupIfDue(store)
+    check()
+    document.addEventListener('visibilitychange', check)
+    return () => document.removeEventListener('visibilitychange', check)
+  }, [loggedIn])
 
   if (auth && !loggedIn) return <LoginScreen auth={auth} />
 

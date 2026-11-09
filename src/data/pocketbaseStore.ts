@@ -14,7 +14,7 @@ interface RecipeRecord extends RecordModel, RecipeFields {
   image: string
   created: string
   updated: string
-  expand?: { category?: CategoryRecord }
+  expand?: { categories?: CategoryRecord[] }
 }
 
 const THUMBS: Record<ImageSize, string> = { thumb: '480x360', full: '1200x0' }
@@ -25,7 +25,7 @@ function toRecipe(r: RecipeRecord): Recipe {
   return {
     id: r.id,
     title: r.title,
-    category: r.category,
+    categories: r.categories ?? [],
     ingredients: r.ingredients,
     instructions: r.instructions,
     notes: r.notes,
@@ -37,7 +37,9 @@ function toRecipe(r: RecipeRecord): Recipe {
     image: r.image,
     created: r.created,
     updated: r.updated,
-    categoryName: r.expand?.category?.name,
+    categoryNames: (r.expand?.categories ?? [])
+      .map((c) => c.name)
+      .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' })),
   }
 }
 
@@ -135,13 +137,13 @@ export class PocketBaseStore implements Store {
     if (filter === 'favorite') parts.push('favorite = true')
     if (filter === 'tested') parts.push('tested = true')
     if (filter === 'incomplete') parts.push("ingredients = '' && instructions = ''")
-    if (typeof filter === 'object') parts.push(this.pb.filter('category = {:c}', { c: filter.category }))
-    const list = await this.recipes().getFullList({ filter: parts.join(' && '), sort: '-created', expand: 'category' })
+    if (typeof filter === 'object') parts.push(this.pb.filter('categories.id ?= {:c}', { c: filter.category }))
+    const list = await this.recipes().getFullList({ filter: parts.join(' && '), sort: '-created', expand: 'categories' })
     return list.map(toRecipe)
   }
 
   async getRecipe(id: string): Promise<Recipe> {
-    return toRecipe(await this.recipes().getOne(id, { expand: 'category' }))
+    return toRecipe(await this.recipes().getOne(id, { expand: 'categories' }))
   }
 
   async findBySourceUrl(url: string): Promise<Recipe | null> {
@@ -149,7 +151,7 @@ export class PocketBaseStore implements Store {
     if (!clean) return null
     const list = await this.recipes().getList(1, 1, {
       filter: this.pb.filter('source_url = {:u}', { u: clean }),
-      expand: 'category',
+      expand: 'categories',
     })
     return list.items[0] ? toRecipe(list.items[0]) : null
   }
@@ -158,6 +160,7 @@ export class PocketBaseStore implements Store {
     const data: Record<string, unknown> = { ...fields }
     if (fields.title !== undefined) data.title = fields.title.trim()
     if (fields.source_url !== undefined) data.source_url = normalizeUrl(fields.source_url)
+    if (fields.categories !== undefined) data.categories = [...new Set(fields.categories.filter(Boolean))]
     // Trocar a foto ou limpá-la faz o PocketBase apagar o arquivo antigo.
     if (image) data.image = image
     else if (image === null) data.image = null
@@ -165,12 +168,12 @@ export class PocketBaseStore implements Store {
   }
 
   async createRecipe(fields: RecipeFields, image?: ImageChange): Promise<Recipe> {
-    const r = await this.recipes().create({ ...this.body(fields, image), user: this.userId() }, { expand: 'category' })
+    const r = await this.recipes().create({ ...this.body(fields, image), user: this.userId() }, { expand: 'categories' })
     return toRecipe(r)
   }
 
   async updateRecipe(id: string, fields: Partial<RecipeFields>, image?: ImageChange): Promise<Recipe> {
-    return toRecipe(await this.recipes().update(id, this.body(fields, image), { expand: 'category' }))
+    return toRecipe(await this.recipes().update(id, this.body(fields, image), { expand: 'categories' }))
   }
 
   async deleteRecipe(id: string): Promise<void> {

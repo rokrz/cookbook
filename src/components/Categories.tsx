@@ -44,7 +44,7 @@ export default function Categories({ categories, onChanged }: Props) {
   }
 
   function remove(c: Category) {
-    if (!window.confirm(`Excluir a categoria "${c.name}"? As receitas dela ficam sem categoria.`)) return
+    if (!window.confirm(`Excluir a categoria "${c.name}"? A categoria sai das receitas, que continuam no caderno.`)) return
     run(() => store.deleteCategory(c.id))
   }
 
