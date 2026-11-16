@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BookOpen, FolderOpen, HardDriveDownload, Link2, LogOut, Plus, ShoppingCart } from 'lucide-react'
+import { BookOpen, CalendarDays, FolderOpen, HardDriveDownload, Link2, LogOut, Plus, ShoppingCart } from 'lucide-react'
 import { store, type Category } from './data'
 import { autoBackupIfDue } from './data/driveBackup'
 import { errorMessage } from './lib/errors'
@@ -11,6 +11,7 @@ import Categories from './components/Categories'
 import QuickSave from './components/QuickSave'
 import Backup from './components/Backup'
 import ShoppingList from './components/ShoppingList'
+import Calendar from './components/Calendar'
 
 export type View =
   | { name: 'library' }
@@ -21,6 +22,7 @@ export type View =
   | { name: 'categories' }
   | { name: 'backup' }
   | { name: 'shopping' }
+  | { name: 'calendar'; day?: string }
 
 // Rotas por hash: funcionam servidas pelo pb_public ou como arquivos estáticos, sem configuração no servidor.
 function parseHash(): View {
@@ -30,6 +32,7 @@ function parseHash(): View {
   if (page === 'categorias') return { name: 'categories' }
   if (page === 'backup') return { name: 'backup' }
   if (page === 'compras') return { name: 'shopping' }
+  if (page === 'calendario') return { name: 'calendar', day: id && /^\d{4}-\d{2}-\d{2}$/.test(id) ? id : undefined }
   if (page === 'receita' && id) return { name: 'detail', id }
   if (page === 'editar' && id) return { name: 'edit', id }
   return { name: 'library' }
@@ -42,6 +45,7 @@ export function navigate(view: View) {
     : view.name === 'categories' ? '#/categorias'
     : view.name === 'backup' ? '#/backup'
     : view.name === 'shopping' ? '#/compras'
+    : view.name === 'calendar' ? (view.day ? `#/calendario/${view.day}` : '#/calendario')
     : view.name === 'detail' ? `#/receita/${view.id}`
     : view.name === 'edit' ? `#/editar/${view.id}`
     : '#/'
@@ -112,6 +116,9 @@ export default function App() {
           <a className={view.name === 'new' ? 'active' : ''} href="#/nova">
             <Plus size={18} aria-hidden /> <span>Nova</span>
           </a>
+          <a className={view.name === 'calendar' ? 'active' : ''} href="#/calendario">
+            <CalendarDays size={18} aria-hidden /> <span>Calendário</span>
+          </a>
           <a className={view.name === 'shopping' ? 'active' : ''} href="#/compras">
             <ShoppingCart size={18} aria-hidden /> <span>Compras</span>
           </a>
@@ -146,6 +153,7 @@ export default function App() {
         {view.name === 'categories' && <Categories categories={categories} onChanged={reloadCategories} />}
         {view.name === 'backup' && <Backup onRestored={reloadCategories} />}
         {view.name === 'shopping' && <ShoppingList />}
+        {view.name === 'calendar' && <Calendar initialDay={view.day} />}
       </main>
     </div>
   )
