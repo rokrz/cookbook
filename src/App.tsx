@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BookOpen, FolderOpen, HardDriveDownload, Link2, LogOut, Plus } from 'lucide-react'
+import { BookOpen, FolderOpen, HardDriveDownload, Link2, LogOut, Plus, ShoppingCart } from 'lucide-react'
 import { store, type Category } from './data'
 import { autoBackupIfDue } from './data/driveBackup'
 import { errorMessage } from './lib/errors'
@@ -10,6 +10,7 @@ import RecipeDetail from './components/RecipeDetail'
 import Categories from './components/Categories'
 import QuickSave from './components/QuickSave'
 import Backup from './components/Backup'
+import ShoppingList from './components/ShoppingList'
 
 export type View =
   | { name: 'library' }
@@ -19,6 +20,7 @@ export type View =
   | { name: 'detail'; id: string }
   | { name: 'categories' }
   | { name: 'backup' }
+  | { name: 'shopping' }
 
 // Rotas por hash: funcionam servidas pelo pb_public ou como arquivos estáticos, sem configuração no servidor.
 function parseHash(): View {
@@ -27,6 +29,7 @@ function parseHash(): View {
   if (page === 'salvar') return { name: 'quick' }
   if (page === 'categorias') return { name: 'categories' }
   if (page === 'backup') return { name: 'backup' }
+  if (page === 'compras') return { name: 'shopping' }
   if (page === 'receita' && id) return { name: 'detail', id }
   if (page === 'editar' && id) return { name: 'edit', id }
   return { name: 'library' }
@@ -38,6 +41,7 @@ export function navigate(view: View) {
     : view.name === 'quick' ? '#/salvar'
     : view.name === 'categories' ? '#/categorias'
     : view.name === 'backup' ? '#/backup'
+    : view.name === 'shopping' ? '#/compras'
     : view.name === 'detail' ? `#/receita/${view.id}`
     : view.name === 'edit' ? `#/editar/${view.id}`
     : '#/'
@@ -108,6 +112,9 @@ export default function App() {
           <a className={view.name === 'new' ? 'active' : ''} href="#/nova">
             <Plus size={18} aria-hidden /> <span>Nova</span>
           </a>
+          <a className={view.name === 'shopping' ? 'active' : ''} href="#/compras">
+            <ShoppingCart size={18} aria-hidden /> <span>Compras</span>
+          </a>
           <a className={view.name === 'categories' ? 'active' : ''} href="#/categorias">
             <FolderOpen size={18} aria-hidden /> <span>Categorias</span>
           </a>
@@ -138,6 +145,7 @@ export default function App() {
         {view.name === 'detail' && <RecipeDetail key={view.id} id={view.id} />}
         {view.name === 'categories' && <Categories categories={categories} onChanged={reloadCategories} />}
         {view.name === 'backup' && <Backup onRestored={reloadCategories} />}
+        {view.name === 'shopping' && <ShoppingList />}
       </main>
     </div>
   )

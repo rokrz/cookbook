@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, CheckCircle2, Clock, ExternalLink, Heart, Pencil, Users } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Clock, ExternalLink, Heart, Pencil, ShoppingCart, Users } from 'lucide-react'
 import { isIncomplete, store, type Recipe } from '../data'
 import { detectPlatform, PLATFORM_LABELS } from '../lib/links'
+import { addShoppingItems, ingredientLines } from '../data/shoppingList'
 import { errorMessage } from '../lib/errors'
 import RecipeImage from './RecipeImage'
 
@@ -16,6 +17,7 @@ function lines(text: string) {
 export default function RecipeDetail({ id }: Props) {
   const [recipe, setRecipe] = useState<Recipe | null>(null)
   const [error, setError] = useState('')
+  const [added, setAdded] = useState('')
 
   useEffect(() => {
     store
@@ -28,6 +30,16 @@ export default function RecipeDetail({ id }: Props) {
   if (!recipe) return <p className="muted">Carregando receita…</p>
 
   const ingredients = lines(recipe.ingredients)
+  const shoppable = ingredientLines(recipe.ingredients)
+
+  function addToShopping() {
+    try {
+      addShoppingItems(shoppable, { id: recipe!.id, title: recipe!.title })
+      setAdded(`${shoppable.length} ${shoppable.length === 1 ? 'ingrediente adicionado' : 'ingredientes adicionados'} à lista de compras.`)
+    } catch (e) {
+      setAdded(errorMessage(e))
+    }
+  }
   const platform = detectPlatform(recipe.source_url)
   const sourceLabel = platform && platform !== 'site' ? `Abrir post no ${PLATFORM_LABELS[platform]}` : 'Abrir receita original'
 
@@ -105,6 +117,18 @@ export default function RecipeDetail({ id }: Props) {
             </ul>
           ) : (
             <p className="muted">Nenhum ingrediente anotado.</p>
+          )}
+          {shoppable.length > 0 && (
+            <div className="add-shopping">
+              <button className="ghost" onClick={addToShopping}>
+                <ShoppingCart size={18} aria-hidden /> Adicionar à lista de compras
+              </button>
+              {added && (
+                <p className="notice" role="status">
+                  {added} <a href="#/compras">Ver lista</a>
+                </p>
+              )}
+            </div>
           )}
         </section>
         <section>

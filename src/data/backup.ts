@@ -1,4 +1,5 @@
 import { LocalStore, upgradeRecipe } from './localStore'
+import { mergeShoppingItems, shoppingList, type ShoppingItem } from './shoppingList'
 import { EMPTY_FIELDS, type Category, type Recipe, type Store } from './types'
 
 // Arquivo de backup: JSON com categorias, receitas e fotos (em data URL).
@@ -21,6 +22,8 @@ interface BackupFile<R = BackupRecipe> {
   exportedAt: string
   categories: Category[]
   recipes: R[]
+  // Lista de compras (opcional: backups antigos não têm).
+  shopping?: ShoppingItem[]
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -44,7 +47,14 @@ export async function exportBackup(store: Store): Promise<Blob> {
     const blob = await store.imageBlob(r).catch(() => null)
     recipes.push(blob ? { ...rest, photo: await blobToDataUrl(blob) } : rest)
   }
-  const file: BackupFile = { format: FORMAT, version: VERSION, exportedAt: new Date().toISOString(), categories, recipes }
+  const file: BackupFile = {
+    format: FORMAT,
+    version: VERSION,
+    exportedAt: new Date().toISOString(),
+    categories,
+    recipes,
+    shopping: shoppingList(),
+  }
   return new Blob([JSON.stringify(file)], { type: 'application/json' })
 }
 
@@ -77,5 +87,7 @@ export async function importBackup(store: LocalStore, file: Blob) {
       image: photo ? await dataUrlToBlob(photo).catch(() => null) : null,
     })),
   )
-  return store.restore(data.categories, recipes)
+  const result = await store.restore(data.categories, recipes)
+  mergeShoppingItems(data.shopping)
+  return result
 }
