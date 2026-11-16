@@ -219,3 +219,54 @@ legend { font-family: 'Playfair Display', serif; font-weight: 700; padding: 0 0.
   .nav { gap: 0; }
   .nav a, .nav button { flex: 1; padding: 0.4rem 0.15rem; }
 }
+
+/* Calendário */
+.calendar { display: grid; gap: 1rem; max-width: 720px; margin: 0 auto; }
+.calendar h1, .calendar > p { margin: 0; }
+.calendar h2 { margin: 0; font-size: 1.15rem; }
+.cal-box { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 0.75rem; display: grid; gap: 0.5rem; }
+.cal-head { display: flex; align-items: center; gap: 0.25rem; }
+.cal-head strong { flex: 1; text-align: center; font-family: 'Playfair Display', serif; font-size: 1.15rem; }
+.cal-head .today-btn { padding: 0.35rem 0.8rem; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.25rem; }
+.cal-weekday { text-align: center; font-size: 0.75rem; color: var(--muted); padding: 0.25rem 0; }
+.cal-day { aspect-ratio: 1 / 1; min-height: 42px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 0.15rem; padding: 0.35rem 0.1rem; border: 1px solid transparent; border-radius: 10px; background: transparent; font-weight: 400; }
+.cal-day:hover:not(.selected) { background: var(--paper-2); }
+.cal-day.out { color: var(--muted); opacity: 0.55; }
+.cal-day.today { border-color: var(--sage); font-weight: 600; color: var(--sage-dark); }
+.cal-day.selected { background: var(--sage); border-color: var(--sage); color: white; }
+.cal-dots { display: flex; gap: 0.2rem; }
+.dot { display: inline-grid; place-items: center; min-width: 8px; height: 8px; border-radius: 999px; font-style: normal; font-size: 0.6rem; line-height: 1; color: white; }
+.dot:not(:empty) { min-width: 15px; height: 15px; padding: 0 0.2rem; }
+.dot.todo { background: var(--terracotta); }
+.dot.todo.late { background: var(--danger); box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 30%, transparent); }
+.dot.done { background: var(--sage-dark); }
+.cal-day.selected .dot { box-shadow: 0 0 0 1.5px white; }
+.cal-day.selected .dot.done { background: white; color: var(--sage-dark); }
+.cal-legend { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; font-size: 0.8rem; }
+.cal-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.cal-day-panel { display: grid; gap: 0.75rem; }
+.cal-day-title { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.status-choice { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.plan-list li { padding-right: 0.5rem; }
+.plan-list .plan-toggle { flex: none; padding-right: 0.25rem; }
+.plan-title { flex: 1; min-width: 0; padding: 0.8rem 0; }
+.plan-title a { text-decoration: none; font-weight: 500; }
+.plan-list li.checked .plan-title a { text-decoration: none; color: var(--ink); }
+.status-tag { font-size: 0.72rem; font-weight: 500; padding: 0.15rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+.status-tag.todo { color: var(--terracotta); background: color-mix(in srgb, var(--terracotta) 14%, transparent); }
+.status-tag.done { color: var(--sage-dark); background: color-mix(in srgb, var(--sage) 18%, transparent); }
+.plan-list li.checked .status-tag { text-decoration: none; }
+.cal-pending { display: grid; gap: 0.5rem; }
+.late-text { color: var(--danger); }
+.schedule-box { display: grid; gap: 0.6rem; padding: 1rem 1.25rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); }
+.schedule-box h2 { margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 0.4rem; }
+.schedule-box p { margin: 0; }
+.schedule-box .inline-form { flex-wrap: wrap; }
+.schedule-box input[type='date'] { width: auto; flex: 0 1 200px; }
+@media (max-width: 720px) {
+  /* Oito abas: cada uma ocupa a largura do próprio rótulo, para "Calendário" e "Categorias" caberem. */
+  .nav a, .nav button { flex: 1 1 auto; padding: 0.4rem 0.1rem; font-size: 0.68rem; white-space: nowrap; }
+  .cal-box { padding: 0.5rem; }
+  .cal-grid { gap: 0.15rem; }
+}
