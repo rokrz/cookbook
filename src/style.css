@@ -196,3 +196,26 @@ legend { font-family: 'Playfair Display', serif; font-weight: 700; padding: 0 0.
 .saved-icon { color: white; background: var(--sage); border-radius: 999px; padding: 0.4rem; width: 48px; height: 48px; }
 .backup-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .backup-actions label.button { display: inline-flex; font-weight: 400; }
+
+/* Lista de compras */
+.shopping { display: grid; gap: 1rem; max-width: 640px; margin: 0 auto; }
+.shopping h1, .shopping > p { margin: 0; }
+.shopping .inline-form input { flex: 1; min-width: 0; }
+.shopping-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: space-between; }
+.recipe-picker { display: grid; gap: 0.75rem; padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper-2); }
+.recipe-picker .category-list { max-height: 320px; overflow-y: auto; }
+.picker-row { flex: 1; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; text-align: left; border: 0; background: transparent; padding: 0.35rem 0; }
+.shopping-list { list-style: none; margin: 0; padding: 0; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
+.shopping-list li { display: flex; align-items: center; gap: 0.25rem; padding-right: 0.5rem; border-bottom: 1px solid var(--line); }
+.shopping-list li:last-child { border-bottom: 0; }
+.shopping-item { flex: 1; display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem 0.5rem 0.8rem 1rem; border: 0; border-radius: 0; background: transparent; text-align: left; font-weight: 400; }
+.shopping-item .box { flex: none; width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--line); display: grid; place-items: center; color: white; }
+.shopping-item .text { display: grid; gap: 0.1rem; }
+.shopping-item small { font-size: 0.75rem; }
+.shopping-list li.checked .box { background: var(--sage); border-color: var(--sage); }
+.shopping-list li.checked .text { text-decoration: line-through; color: var(--muted); }
+.add-shopping { display: grid; gap: 0.5rem; justify-items: start; margin-top: 0.75rem; }
+@media (max-width: 720px) {
+  .nav { gap: 0; }
+  .nav a, .nav button { flex: 1; padding: 0.4rem 0.15rem; }
+}
