@@ -1,5 +1,6 @@
 import { LocalStore, upgradeRecipe } from './localStore'
 import { mergeShoppingItems, shoppingList, type ShoppingItem } from './shoppingList'
+import { mergePlanEntries, planEntries, type PlanEntry } from './mealPlan'
 import { EMPTY_FIELDS, type Category, type Recipe, type Store } from './types'
 
 // Arquivo de backup: JSON com categorias, receitas e fotos (em data URL).
@@ -24,6 +25,8 @@ interface BackupFile<R = BackupRecipe> {
   recipes: R[]
   // Lista de compras (opcional: backups antigos não têm).
   shopping?: ShoppingItem[]
+  // Calendário de receitas (opcional: backups antigos não têm).
+  calendar?: PlanEntry[]
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -54,6 +57,7 @@ export async function exportBackup(store: Store): Promise<Blob> {
     categories,
     recipes,
     shopping: shoppingList(),
+    calendar: planEntries(),
   }
   return new Blob([JSON.stringify(file)], { type: 'application/json' })
 }
@@ -89,5 +93,6 @@ export async function importBackup(store: LocalStore, file: Blob) {
   )
   const result = await store.restore(data.categories, recipes)
   mergeShoppingItems(data.shopping)
+  mergePlanEntries(data.calendar)
   return result
 }

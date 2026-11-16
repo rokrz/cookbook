@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { BookOpen, Check, Plus, Search, ShoppingCart, Trash2, X } from 'lucide-react'
-import { store, type Recipe } from '../data'
+import { BookOpen, Check, Plus, ShoppingCart, Trash2, X } from 'lucide-react'
+import { type Recipe } from '../data'
 import {
   addShoppingItems,
   clearShoppingList,
@@ -11,6 +11,10 @@ import {
   toggleShoppingItem,
 } from '../data/shoppingList'
 import { errorMessage } from '../lib/errors'
+import RecipePicker from './RecipePicker'
+
+const hasIngredients = (r: Recipe) => ingredientLines(r.ingredients).length > 0
+const ingredientCount = (r: Recipe) => `${ingredientLines(r.ingredients).length} ingredientes`
 
 export default function ShoppingList() {
   const [items, setItems] = useState(shoppingList)
@@ -83,7 +87,15 @@ export default function ShoppingList() {
         </button>
       </div>
 
-      {importing && <RecipePicker onPick={imported} onClose={() => setImporting(false)} />}
+      {importing && (
+        <RecipePicker
+          onPick={imported}
+          onClose={() => setImporting(false)}
+          filter={hasIngredients}
+          detail={ingredientCount}
+          emptyText="Nenhuma receita tem ingredientes anotados ainda."
+        />
+      )}
 
       {message && <p className="notice" role="status">{message}</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
@@ -117,56 +129,5 @@ export default function ShoppingList() {
         </ul>
       )}
     </section>
-  )
-}
-
-function RecipePicker({ onPick, onClose }: { onPick: (r: Recipe) => void; onClose: () => void }) {
-  const [query, setQuery] = useState('')
-  const [recipes, setRecipes] = useState<Recipe[] | null>(null)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    let alive = true
-    const t = setTimeout(() => {
-      store
-        .listRecipes(query, 'all')
-        .then((list) => alive && setRecipes(list.filter((r) => ingredientLines(r.ingredients).length > 0)))
-        .catch((e) => alive && setError(errorMessage(e)))
-    }, 200)
-    return () => {
-      alive = false
-      clearTimeout(t)
-    }
-  }, [query])
-
-  return (
-    <div className="recipe-picker">
-      <div className="inline-form">
-        <div className="search">
-          <Search size={18} aria-hidden />
-          <input autoFocus placeholder="Buscar receita" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Buscar receita" />
-        </div>
-        <button className="icon" onClick={onClose} title="Fechar">
-          <X size={18} />
-        </button>
-      </div>
-      {error && <p className="form-error" role="alert">{error}</p>}
-      {!recipes ? (
-        <p className="muted">Carregando receitas…</p>
-      ) : recipes.length === 0 ? (
-        <p className="muted">{query ? 'Nenhuma receita com ingredientes encontrada.' : 'Nenhuma receita tem ingredientes anotados ainda.'}</p>
-      ) : (
-        <ul className="category-list">
-          {recipes.map((r) => (
-            <li key={r.id}>
-              <button className="picker-row" onClick={() => onPick(r)}>
-                <span>{r.title}</span>
-                <small className="muted">{ingredientLines(r.ingredients).length} ingredientes</small>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   )
 }

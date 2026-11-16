@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, CheckCircle2, Clock, ExternalLink, Heart, Pencil, ShoppingCart, Users } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, CheckCircle2, Clock, ExternalLink, Heart, Pencil, ShoppingCart, Users } from 'lucide-react'
 import { isIncomplete, store, type Recipe } from '../data'
 import { detectPlatform, PLATFORM_LABELS } from '../lib/links'
 import { addShoppingItems, ingredientLines } from '../data/shoppingList'
+import { addPlanEntry, defaultStatus, onPlanChange, parseDay, planEntries, todayKey } from '../data/mealPlan'
 import { errorMessage } from '../lib/errors'
 import RecipeImage from './RecipeImage'
 
@@ -18,6 +19,11 @@ export default function RecipeDetail({ id }: Props) {
   const [recipe, setRecipe] = useState<Recipe | null>(null)
   const [error, setError] = useState('')
   const [added, setAdded] = useState('')
+  const [planDay, setPlanDay] = useState(todayKey)
+  const [scheduled, setScheduled] = useState('')
+  const [plan, setPlan] = useState(planEntries)
+
+  useEffect(() => onPlanChange(() => setPlan(planEntries())), [])
 
   useEffect(() => {
     store
@@ -40,6 +46,23 @@ export default function RecipeDetail({ id }: Props) {
       setAdded(errorMessage(e))
     }
   }
+
+  function schedule() {
+    try {
+      const status = defaultStatus(planDay)
+      addPlanEntry(planDay, { id: recipe!.id, title: recipe!.title }, status)
+      const when = parseDay(planDay).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+      setScheduled(status === 'done' ? `Marcada como feita em ${when}.` : `Agendada para ${when}.`)
+    } catch (e) {
+      setScheduled(errorMessage(e))
+    }
+  }
+
+  const mine = plan.filter((e) => e.recipeId === recipe.id)
+  const doneDays = mine.filter((e) => e.status === 'done').map((e) => e.date).sort()
+  const nextDay = mine.filter((e) => e.status === 'todo' && e.date >= todayKey()).map((e) => e.date).sort()[0]
+  const fmt = (d: string) => parseDay(d).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\./g, '')
+
   const platform = detectPlatform(recipe.source_url)
   const sourceLabel = platform && platform !== 'site' ? `Abrir post no ${PLATFORM_LABELS[platform]}` : 'Abrir receita original'
 
@@ -137,6 +160,30 @@ export default function RecipeDetail({ id }: Props) {
         </section>
       </div>
       )}
+
+      <section className="schedule-box">
+        <h2>
+          <CalendarPlus size={20} aria-hidden /> Calendário
+        </h2>
+        {(doneDays.length > 0 || nextDay) && (
+          <p className="muted">
+            {doneDays.length > 0 &&
+              `Feita ${doneDays.length === 1 ? '1 vez' : `${doneDays.length} vezes`}, a última em ${fmt(doneDays[doneDays.length - 1])}. `}
+            {nextDay && `Agendada para ${fmt(nextDay)}.`}
+          </p>
+        )}
+        <div className="inline-form">
+          <input type="date" value={planDay} onChange={(e) => setPlanDay(e.target.value)} aria-label="Dia" />
+          <button className="ghost" onClick={schedule} disabled={!planDay}>
+            {planDay && planDay < todayKey() ? 'Marcar como feita' : 'Agendar'}
+          </button>
+        </div>
+        {scheduled && (
+          <p className="notice" role="status">
+            {scheduled} <a href={`#/calendario/${planDay}`}>Ver no calendário</a>
+          </p>
+        )}
+      </section>
 
       {recipe.notes && (
         <section className="notes">
