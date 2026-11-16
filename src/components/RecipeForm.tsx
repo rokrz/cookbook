@@ -4,6 +4,9 @@ import { store, type Category, type Recipe, type RecipeFields } from '../data'
 import { errorMessage } from '../lib/errors'
 import { prepareImage } from '../lib/image'
 import { navigate } from '../App'
+import { type ParsedCaption } from '../lib/caption'
+import { clearShare, peekShare } from '../lib/share'
+import CaptionImport from './CaptionImport'
 import CategoryPicker from './CategoryPicker'
 
 interface Props {
@@ -62,6 +65,13 @@ export default function RecipeForm({ id, categories, onCategoryCreated }: Props)
   const [loading, setLoading] = useState(Boolean(id))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // Texto vindo do menu Compartilhar (só em Nova receita).
+  const [sharedText] = useState(() => (id ? '' : (peekShare()?.text ?? '')))
+  const [beforeCaption, setBeforeCaption] = useState<FormState | null>(null)
+
+  useEffect(() => {
+    if (sharedText) clearShare()
+  }, [sharedText])
 
   useEffect(() => {
     if (!id) return
@@ -84,6 +94,25 @@ export default function RecipeForm({ id, categories, onCategoryCreated }: Props)
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  // Ingredientes e preparo vêm da legenda; nome, rendimento, tempo e dicas só preenchem se vazios.
+  function applyCaption(p: ParsedCaption) {
+    setBeforeCaption(form)
+    setForm((f) => ({
+      ...f,
+      title: f.title.trim() ? f.title : p.title,
+      ingredients: p.ingredients || f.ingredients,
+      instructions: p.instructions || f.instructions,
+      servings: f.servings.trim() ? f.servings : p.servings,
+      prep_minutes: f.prep_minutes || (p.prep_minutes ? String(p.prep_minutes) : ''),
+      notes: f.notes.trim() ? f.notes : p.notes,
+    }))
+  }
+
+  function undoCaption() {
+    if (beforeCaption) setForm(beforeCaption)
+    setBeforeCaption(null)
   }
 
   async function pickImage(file: File | undefined) {
@@ -139,6 +168,15 @@ export default function RecipeForm({ id, categories, onCategoryCreated }: Props)
   return (
     <form className="recipe-form" onSubmit={submit}>
       <h1>{original ? 'Editar receita' : 'Nova receita'}</h1>
+
+      <CaptionImport
+        sourceUrl={form.source_url}
+        initialText={sharedText}
+        autoRead={Boolean(sharedText)}
+        open={Boolean(original && !original.ingredients.trim() && !original.instructions.trim())}
+        onRead={applyCaption}
+        onUndo={undoCaption}
+      />
 
       <fieldset>
         <legend>Sobre a receita</legend>

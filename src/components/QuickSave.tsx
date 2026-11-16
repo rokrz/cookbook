@@ -3,7 +3,9 @@ import { Check, ClipboardPaste, ExternalLink, Link2, Pencil } from 'lucide-react
 import { EMPTY_FIELDS, store, type Category, type Recipe } from '../data'
 import { errorMessage } from '../lib/errors'
 import { detectPlatform, isValidUrl, PLATFORM_LABELS, readShared } from '../lib/links'
+import { describeParsed, type ParsedCaption } from '../lib/caption'
 import { clearShare, peekShare } from '../lib/share'
+import CaptionImport from './CaptionImport'
 import CategoryPicker from './CategoryPicker'
 
 interface Props {
@@ -15,6 +17,11 @@ interface Props {
 export default function QuickSave({ categories, onCategoryCreated }: Props) {
   const [url, setUrl] = useState(() => peekShare()?.url ?? '')
   const [title, setTitle] = useState(() => peekShare()?.title ?? '')
+  const [sharedText] = useState(() => peekShare()?.text ?? '')
+  const [sharedTitle] = useState(() => peekShare()?.title ?? '')
+  // Ingredientes e preparo lidos da legenda, salvos junto com o link.
+  const [parsed, setParsed] = useState<ParsedCaption | null>(null)
+  const [captionKey, setCaptionKey] = useState(0)
   const [selected, setSelected] = useState<string[]>([])
   const [duplicate, setDuplicate] = useState<Recipe | null>(null)
   const [saved, setSaved] = useState<Recipe | null>(null)
@@ -60,7 +67,21 @@ export default function QuickSave({ categories, onCategoryCreated }: Props) {
     setBusy(true)
     setError('')
     try {
-      setSaved(await store.createRecipe({ ...EMPTY_FIELDS, title: title.trim(), source_url: url.trim(), categories: selected }))
+      setSaved(
+        await store.createRecipe({
+          ...EMPTY_FIELDS,
+          title: title.trim(),
+          source_url: url.trim(),
+          categories: selected,
+          ...(parsed && {
+            ingredients: parsed.ingredients,
+            instructions: parsed.instructions,
+            notes: parsed.notes,
+            servings: parsed.servings,
+            prep_minutes: parsed.prep_minutes,
+          }),
+        }),
+      )
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -73,6 +94,8 @@ export default function QuickSave({ categories, onCategoryCreated }: Props) {
     setUrl('')
     setTitle('')
     setSelected([])
+    setParsed(null)
+    setCaptionKey((k) => k + 1)
   }
 
   if (saved) {
@@ -82,11 +105,12 @@ export default function QuickSave({ categories, onCategoryCreated }: Props) {
           <Check size={32} aria-hidden className="saved-icon" />
           <h1>Receita salva</h1>
           <p className="muted">
-            “{saved.title}” está no seu caderno{saved.categoryNames.length ? ` em ${saved.categoryNames.join(', ')}` : ''}. Complete quando quiser.
+            “{saved.title}” está no seu caderno{saved.categoryNames.length ? ` em ${saved.categoryNames.join(', ')}` : ''}.
+            {parsed ? ` Com ${describeParsed(parsed)} da legenda.` : ' Complete quando quiser.'}
           </p>
           <div className="welcome-actions">
             <a className="button" href={`#/editar/${saved.id}`}>
-              <Pencil size={18} aria-hidden /> Completar agora
+              <Pencil size={18} aria-hidden /> {parsed ? 'Revisar receita' : 'Completar agora'}
             </a>
             <button type="button" className="button" onClick={reset}>
               <Link2 size={18} aria-hidden /> Salvar outro link
@@ -154,6 +178,19 @@ export default function QuickSave({ categories, onCategoryCreated }: Props) {
           <CategoryPicker value={selected} categories={categories} onChange={setSelected} onCreated={onCategoryCreated} />
         </div>
       </fieldset>
+
+      <CaptionImport
+        key={captionKey}
+        sourceUrl={url}
+        initialText={sharedText}
+        autoRead={Boolean(sharedText)}
+        onRead={(p) => {
+          setParsed(p)
+          // O nome sugerido pelo compartilhamento é a 1ª linha crua; o da legenda vem limpo.
+          if (p.title && (!title.trim() || title === sharedTitle)) setTitle(p.title)
+        }}
+        onUndo={() => setParsed(null)}
+      />
 
       {error && <p className="form-error" role="alert">{error}</p>}
 

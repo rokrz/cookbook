@@ -270,3 +270,15 @@ legend { font-family: 'Playfair Display', serif; font-weight: 700; padding: 0 0.
   .cal-box { padding: 0.5rem; }
   .cal-grid { gap: 0.15rem; }
 }
+
+/* Ler legenda do post */
+.caption-import { border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); padding: 0.75rem 1rem; }
+.caption-import[open] { padding-bottom: 1rem; }
+.caption-import summary { cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: 500; color: var(--sage-dark); list-style: none; }
+.caption-import summary::-webkit-details-marker { display: none; }
+.caption-import summary::after { content: '▾'; margin-left: auto; color: var(--muted); }
+.caption-import[open] summary::after { content: '▴'; }
+.caption-import[open] > * + * { margin-top: 0.75rem; }
+.caption-import p { margin: 0; }
+.caption-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+.link-button { display: inline-flex; align-items: center; gap: 0.25rem; margin-left: 0.5rem; padding: 0; background: none; border: 0; color: var(--sage-dark); text-decoration: underline; font: inherit; cursor: pointer; }
